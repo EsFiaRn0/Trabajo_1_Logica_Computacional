@@ -1,0 +1,1 @@
+$((p \rightarrow q) \wedge (\neg r \vee p))$
