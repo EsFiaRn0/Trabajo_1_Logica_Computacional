@@ -59,7 +59,8 @@
 	Esto quiere decir que se analizar\'an f\'ormulas compuestas por proposiciones at\'omicas, negaciones de otras f\'ormulas y conjunciones de dos f\'ormulas.\\\\
 	Luego de codificar se tiene que transformar a su notaci\'on postfix o tambi\'en llamada \textit{notaci\'on polaca inversa} con la cual facilitar\'a la creaci\'on de un \textit{parse tree} para asignar valores \textbf{T} o \textbf{F} a cada nodo. Al tener el parse tree correspondiente a la f\'ormula que se eval\'ua asignamos \textbf{T} al nodo que encabeza el \'arbol. Esto implica asumir que la f\'ormula completa es verdadera y a partir de ello se puede extender esta asignaci\'on hacia los nodos hijos del \'arbol aplicando reglas sem\'anticas de los conectores l\'ogicos. \\\\
 	Si el nodo principal es una conjunci\'on $\phi \land \psi$ entonces $\phi$ y $\psi$ deben ser verdaderas. Por el contrario, si el nodo es una negaci\'on $\neg \phi$ quiere decir que la subf\'ormula $\phi$ es falsa. Este procedimiento se aplica recursivamente hasta llegar a los nodos hoja, los cuales corresponden a \'atomos proposicionales. \\\\
-	De esta forma se obtiene una asignaci\'on de valores de verdad que satisface la f\'ormula. En caso que las asignaciones conduzcan a una contradicci\'on (por ejemplo, se tiene $p \equiv \textbf{T}$ y $\neg p\equiv \textbf{T}$) se descarta el camino recorrido o incluso que la f\'ormula es \textit{insatisfacible}.
+	De esta forma se obtiene una asignaci\'on de valores de verdad que satisface la f\'ormula. En caso que las asignaciones conduzcan a una contradicci\'on (por ejemplo, se tiene $p \equiv \textbf{T}$ y $\neg p\equiv \textbf{T}$) se descarta el camino recorrido o incluso puede significar que la f\'ormula es \textit{insatisfacible}. \\\\
+	Adicionalmente para una mayor eficiencia en espacio y tiempo, detectar y reutilizar \'atomos proposicionales podemos construir en cambio un DAG (Directed Acyclic Graph).
 	\section{Algoritmo}
 	
 	\section{Implementaci\'on}
