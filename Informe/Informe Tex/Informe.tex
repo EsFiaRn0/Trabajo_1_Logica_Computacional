@@ -1,0 +1,72 @@
+\documentclass{report}
+
+\usepackage{epsfig}
+\usepackage{graphicx}
+
+\renewcommand*\thesection{\arabic{section}}
+
+\newcommand \minitab{\hspace*{15 pt}}
+\newcommand{\floor}[1]{\left\lfloor #1 \right\rfloor}
+
+\hyphenation{ins-truc-ciones}
+
+\begin{document}
+	\begin{titlepage}
+		\begin{center}
+			\includegraphics[width=0.5\textwidth]{../Imagenes/LOGO-USACH_COLOR}
+		\end{center}
+		\begin{center}
+			{\bf Departamento de Matem\'atica y Ciencia de la Computaci\'on}
+		\end{center}
+		\vspace{3cm}
+		\begin{center}
+			{\Large \bf Tarea 1 - SAT Lineal}
+			~ \\ 
+			~ \\ 
+			~ \\
+			~ \\
+			\begin{tabular}{c c c}
+				Miguel Olivares Morales & ~~~~~~~ & Benjam\'in Riveros Landeros \\
+				miguel.olivares@usach.cl & & benjamin.riveros.l@usach.cl \\
+			\end{tabular}
+			~ \\ 
+			~ \\ 
+			~ \\
+			~ \\
+			\begin{tabular}{c c c}
+				L\'ogica Computacional - 22625 & ~~~~~~~~~~~~~~~~~ & Semestre Oto\~no 2025 \\
+				Licenciatura en Ciencia de la Computaci\'on & &  \\
+			\end{tabular}
+		\end{center}
+	\end{titlepage}
+	
+	\section{Introducci\'on}
+	El problema de determinar si las variables de una f\'ormula booleana pueden ser reemplazadas con valores \textbf{T} o \textbf{F} de tal forma que la f\'ormula de como resultado \textbf{T} se denomina problema de satisfacibilidad booleana o SAT. Si al evaluar la f\'ormula esta da como resultado \textbf{T}, entonces se dice que es satisfactoria.
+	\section{Procedimiento}
+	Las f\'ormulas que ser\'an analizadas primero tendr\'an que ser codificadas seg\'un la siguiente gramatica:
+	\[ \phi ::= p \hspace{1mm}|\hspace{1mm} (\neg \phi)  \hspace{1mm}|\hspace{1mm} (\phi \land \phi) \]
+	Para esto usamos el siguiente esquema de traducci\'on: \\\\
+	\begin{minipage}[t]{0.45\textwidth}
+		$ T(p)=p $ \\\\
+		$ T(\phi_1 \land \phi_2)=T(\phi_1) \land T(\phi_2) $ \\\\
+		$ T(\phi_1 \rightarrow \phi_2) = \neg(T(\phi_1) \land \neg T(\phi_2)) $
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\textwidth}
+		$ T(\neg \phi) = \neg T(\phi) $ \\\\
+		$ T(\phi_1 \lor \phi_2) = \neg(\neg T(\phi_1) \land \neg T(\phi_2)) $
+	\end{minipage} \vspace*{5mm} \\ 
+	Esto quiere decir que se analizar\'an f\'ormulas compuestas por proposiciones at\'omicas, negaciones de otras f\'ormulas y conjunciones de dos f\'ormulas.\\\\
+	Luego de codificar se tiene que transformar a su notaci\'on postfix o tambi\'en llamada \textit{notaci\'on polaca inversa} con la cual facilitar\'a la creaci\'on de un \textit{parse tree} para asignar valores \textbf{T} o \textbf{F} a cada nodo. Al tener el parse tree correspondiente a la f\'ormula que se eval\'ua asignamos \textbf{T} al nodo que encabeza el \'arbol. Esto implica asumir que la f\'ormula completa es verdadera y a partir de ello se puede extender esta asignaci\'on hacia los nodos hijos del \'arbol aplicando reglas sem\'anticas de los conectores l\'ogicos. \\\\
+	Si el nodo principal es una conjunci\'on $\phi \land \psi$ entonces $\phi$ y $\psi$ deben ser verdaderas. Por el contrario, si el nodo es una negaci\'on $\neg \phi$ quiere decir que la subf\'ormula $\phi$ es falsa. Este procedimiento se aplica recursivamente hasta llegar a los nodos hoja, los cuales corresponden a \'atomos proposicionales. \\\\
+	De esta forma se obtiene una asignaci\'on de valores de verdad que satisface la f\'ormula. En caso que las asignaciones conduzcan a una contradicci\'on (por ejemplo, se tiene $p \equiv \textbf{T}$ y $\neg p\equiv \textbf{T}$) se descarta el camino recorrido o incluso que la f\'ormula es \textit{insatisfacible}.
+	\section{Algoritmo}
+	
+	\section{Implementaci\'on}
+	
+	\section{Conclusiones}
+	
+\end{document}
+
+
+
