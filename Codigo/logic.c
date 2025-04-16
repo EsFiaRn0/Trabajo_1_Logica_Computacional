@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,6 +6,10 @@
 
 Node* create_var(const char* name) {
     Node* node = (Node*)malloc(sizeof(Node));
+    if (!node) {
+        fprintf(stderr, "Error al asignar memoria para un nodo VAR\n");
+        exit(1);
+    }
     node->type = VAR;
     node->var_name = strdup(name);
     node->left = node->right = NULL;
@@ -12,7 +17,11 @@ Node* create_var(const char* name) {
 }
 
 Node* create_op(NodeType type, Node* left, Node* right) {
-    Node* node = (Node*)malloc(sizeof(Node));
+    Node* node = (Node*) malloc(sizeof(Node));
+    if (!node) {
+        fprintf(stderr, "Error al asignar memoria para un nodo de operación\n");
+        exit(1);
+    }
     node->type = type;
     node->left = left;
     node->right = right;
@@ -21,7 +30,11 @@ Node* create_op(NodeType type, Node* left, Node* right) {
 }
 
 Node* create_not(Node* child) {
-    Node* node = (Node*)malloc(sizeof(Node));
+    Node* node = (Node*) malloc(sizeof(Node));
+    if (!node) {
+        fprintf(stderr, "Error al asignar memoria para un nodo NOT\n");
+        exit(1);
+    }
     node->type = NOT;
     node->left = child;
     node->right = NULL;
@@ -29,7 +42,6 @@ Node* create_not(Node* child) {
     return node;
 }
 
-// Remueve las implicaciones: A → B se convierte en ¬A ∨ B
 Node* impl_free(Node* node) {
     if (!node) return NULL;
 
@@ -50,69 +62,64 @@ Node* impl_free(Node* node) {
     }
 }
 
-// Convierte a forma normal negativa (NNF)
-Node* to_nnf(Node* node) {
+Node* copy_tree(Node* node) {
     if (!node) return NULL;
 
-    if (node->type == NOT) {
-        Node* child = node->left;
-        if (child->type == NOT) {
-            return to_nnf(child->left); // ~~A => A
-        } else if (child->type == AND) {
-            return create_op(OR,
-                to_nnf(create_not(child->left)),
-                to_nnf(create_not(child->right)));
-        } else if (child->type == OR) {
-            return create_op(AND,
-                to_nnf(create_not(child->left)),
-                to_nnf(create_not(child->right)));
-        } else {
-            return create_not(to_nnf(child));
-        }
-    } else if (node->type == AND || node->type == OR) {
-        return create_op(node->type,
-            to_nnf(node->left),
-            to_nnf(node->right));
-    } else {
-        return create_var(node->var_name);
+    Node* new_node = (Node*)malloc(sizeof(Node));
+    if (!new_node) {
+        fprintf(stderr, "Error al asignar memoria en copy_tree\n");
+        exit(1);
     }
+    new_node->type = node->type;
+    new_node->var_name = node->var_name ? strdup(node->var_name) : NULL;
+    new_node->left = copy_tree(node->left);
+    new_node->right = copy_tree(node->right);
+    return new_node;
 }
 
-// Convierte a CNF (distribuyendo OR sobre AND)
 Node* distribute(Node* a, Node* b) {
     if (!a || !b) return NULL;
 
     if (a->type == AND) {
         return create_op(AND,
-            distribute(a->left, b),
-            distribute(a->right, b));
+            distribute(a->left, copy_tree(b)),
+            distribute(a->right, copy_tree(b)));
     } else if (b->type == AND) {
         return create_op(AND,
-            distribute(a, b->left),
-            distribute(a, b->right));
+            distribute(copy_tree(a), b->left),
+            distribute(copy_tree(a), b->right));
     } else {
-        return create_op(OR, a, b);
+        return create_op(OR, copy_tree(a), copy_tree(b));
     }
 }
 
 Node* to_cnf(Node* node) {
     if (!node) return NULL;
 
-    if (node->type == OR) {
-        Node* left = to_cnf(node->left);
-        Node* right = to_cnf(node->right);
-        return distribute(left, right);
-    } else if (node->type == AND) {
-        return create_op(AND,
-            to_cnf(node->left),
-            to_cnf(node->right));
-    } else if (node->type == NOT || node->type == VAR) {
-        return node;
+    switch (node->type) {
+        case OR: {
+            Node* left = to_cnf(node->left);
+            Node* right = to_cnf(node->right);
+            return distribute(left, right);
+        }
+        case AND: {
+            return create_op(AND,
+                to_cnf(node->left),
+                to_cnf(node->right));
+        }
+        case NOT: {
+            return create_not(to_cnf(node->left));
+        }
+        case VAR: {
+            return create_var(node->var_name);
+        }
+        default:
+            return NULL;
     }
-    return NULL;
 }
 
-// Imprimir fórmula
+
+// Función para imprimir la fórmula.
 void print_formula(Node* node) {
     if (!node) return;
 
@@ -148,11 +155,18 @@ void print_formula(Node* node) {
     }
 }
 
-// Liberar memoria del árbol
+// Función para liberar todo el árbol
 void free_tree(Node* node) {
     if (!node) return;
-    free_tree(node->left);
-    free_tree(node->right);
-    if (node->var_name) free(node->var_name);
+
+    if (node->left) free_tree(node->left);
+    if (node->right) free_tree(node->right);
+
+    if (node->var_name) {
+        free(node->var_name);
+        node->var_name = NULL; 
+    }
+
     free(node);
+    node = NULL;
 }

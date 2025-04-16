@@ -51,7 +51,6 @@ char* convert_to_postfix(const char* input) {
     int top = 0;
 
     char token[256];
-    int pos = 0;
 
     for (int i = 0; input[i];) {
         if (isspace(input[i]) || input[i] == '$') {

@@ -1,83 +1,73 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#include "logic.h"
+#include <string.h>
 #include "postfix_converter.h"
-
-typedef struct yy_buffer_state *YY_BUFFER_STATE;
+#include "logic.h"
 
 extern int yylex();
-extern void yyrestart(FILE*);
-extern YY_BUFFER_STATE yy_scan_string(const char *str);
-extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
-
+extern FILE* yyin;
 extern Node* stack[];
 extern int top;
 extern void reset_stack();
 
-int main(int argc, char** argv) {
+int main(int argc, char* argv[]) {
     if (argc != 2) {
-        fprintf(stderr, "Uso: %s formulas.txt\n", argv[0]);
+        fprintf(stderr, "Uso: %s '<fórmula en LaTeX>'\n", argv[0]);
         return 1;
     }
 
-    FILE* file = fopen(argv[1], "r");
-    if (!file) {
-        perror("No se pudo abrir el archivo");
+    FILE* input_file = fopen(argv[1], "r");
+    if (!input_file) {
+        perror("No se pudo abrir el archivo de fórmulas");
         return 1;
     }
 
-    char line[1024];
-    int line_num = 1;
-
-    while (fgets(line, sizeof(line), file)) {
-        line[strcspn(line, "\n")] = '\0';
-
-        printf("Línea %d:\n", line_num++);
-        printf("  Fórmula original : %s\n", line);
-
-        reset_stack();
+    char line[2048];
+    while (fgets(line, sizeof(line), input_file)) {
+        line[strcspn(line, "\n")] = 0;
 
         char* postfix = convert_to_postfix(line);
-        printf("  Fórmula postfija : %s\n", postfix);
+        printf("Postfijo: %s\n", postfix);
 
-        YY_BUFFER_STATE buffer = yy_scan_string(postfix);
-        yylex();
-        yy_delete_buffer(buffer);
-        free(postfix);
+        FILE* temp = fopen("temp_input.txt", "w");
+        if (!temp) {
+            perror("No se pudo abrir archivo temporal");
+            return 1;
+        }
+        fprintf(temp, "%s\n", postfix);
+        fclose(temp);
 
-        printf("Estado de la pila después de procesar la fórmula:\n");
-        printf("  Top: %d\n", top);
-        if (top > 0) {
-            printf("  Pila: ");
-            for (int i = 0; i < top; i++) {
-                printf("%p ", stack[i]);
-            }
-            printf("\n");
-        } else {
-            printf("  Pila vacía.\n");
+        yyin = fopen("temp_input.txt", "r");
+        if (!yyin) {
+            perror("No se pudo abrir temp_input.txt");
+            return 1;
         }
 
+        reset_stack();
+        yylex(); 
+
         if (top != 1) {
-            fprintf(stderr, "  ⚠️ Error: fórmula mal formada (top = %d)\n\n", top);
+            fprintf(stderr, "Error: fórmula mal formada (top = %d)\n", top);
+            fclose(yyin);
+            remove("temp_input.txt");
             continue;
         }
 
         Node* root = stack[0];
-        Node* no_impl = impl_free(root);
-        Node* nnf = to_nnf(no_impl);
-        Node* cnf = to_cnf(nnf);
 
-        printf("  Forma en CNF     : ");
+        Node* cnf = to_cnf(root);
+
+        printf("Fórmula en la gramatica pedida por sat_lineal:\n");
         print_formula(cnf);
-        printf("\n\n");
+        printf("\n");
 
-        free_tree(root);
-        free_tree(no_impl);
-        free_tree(nnf);
+        free(postfix);
         free_tree(cnf);
+
+        fclose(yyin);
+        remove("temp_input.txt");
     }
 
-    fclose(file);
+    fclose(input_file);
     return 0;
 }
