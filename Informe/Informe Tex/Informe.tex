@@ -2,6 +2,12 @@
 
 \usepackage{epsfig}
 \usepackage{graphicx}
+\usepackage{array}
+\usepackage{geometry}
+\usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{tikz}
 
 \renewcommand*\thesection{\arabic{section}}
 
@@ -61,6 +67,69 @@
 	Si el nodo principal es una conjunci\'on $\phi \land \psi$ entonces $\phi$ y $\psi$ deben ser verdaderas. Por el contrario, si el nodo es una negaci\'on $\neg \phi$ quiere decir que la subf\'ormula $\phi$ es falsa. Este procedimiento se aplica recursivamente hasta llegar a los nodos hoja, los cuales corresponden a \'atomos proposicionales. \\\\
 	De esta forma se obtiene una asignaci\'on de valores de verdad que satisface la f\'ormula. En caso que las asignaciones conduzcan a una contradicci\'on (por ejemplo, se tiene $p \equiv \textbf{T}$ y $\neg p\equiv \textbf{T}$) se descarta el camino recorrido o incluso puede significar que la f\'ormula es \textit{insatisfacible}. \\\\
 	Adicionalmente para una mayor eficiencia en espacio y tiempo, detectar y reutilizar \'atomos proposicionales podemos construir en cambio un DAG (Directed Acyclic Graph).
+	\subsection{Ejemplo}
+	Dada la siguiente f\'ormula:
+	\[ ((p \rightarrow q) \wedge (\neg r \vee p)) \]
+	El primer paso es aplicar la codificaci\'on mencionada anteriormente
+	\begin{align*}
+		\phi &= ((p \rightarrow q) \wedge (\neg r \vee p)) \\
+		T(\phi) &= T(((p \rightarrow q) \wedge (\neg r \vee p)) ) \\
+		&= T(p \rightarrow q) \wedge T(\neg r \vee p) \\
+		&= \neg(T(p) \wedge \neg T(q)) \wedge \neg(\neg T(\neg r) \wedge \neg T(p)) \\
+		T(\phi) &= \neg(p \wedge \neg q) \wedge \neg(\neg \neg r \wedge \neg p)
+	\end{align*}
+	El siguiente paso es transformar la f\'ormula codificada a su notaci\'on postfix, para esto hay que descomponer la f\'ormula en \textit{tokens} de la siguiente manera:
+	\[ [\neg, (, p, \wedge, \neg, q, ), \wedge, \neg, (, \neg, \neg, r, \wedge, \neg, p, )] \]
+	Para transformas a su notaci\'on postfix se tiene que saber que se eval\'uan los operadores seg\'un la precedencia, en donde la negaci\'on tiene la mayor precedencia por lo que se eval\'ua primero y desp\'ues la conjunci\'on.
+	\begin{center}
+		\begin{longtable}{|c|l|l|l|}
+			\hline
+			\textbf{Token} & \textbf{Acción} & \textbf{Salida} & \textbf{Stack} \\
+			\hline
+			\endfirsthead
+			\hline
+			\textbf{Token} & \textbf{Acción} & \textbf{Salida} & \textbf{Stack} \\
+			\hline
+			\endhead
+			
+			$\neg$ & Apilar operador & & $\neg$ \\
+			\hline
+			( & Apilar paréntesis & & $\neg$, ( \\
+			\hline
+			$p$ & Agregar a salida & $p$ & $\neg$, ( \\
+			\hline
+			$\wedge$ & Apilar operador & $p$ & $\neg$, (, $\wedge$ \\
+			\hline
+			$\neg$ & Apilar operador & $p$ & $\neg$, (, $\wedge$, $\neg$ \\
+			\hline
+			$q$ & Agregar a salida & $p\ q$ & $\neg$, (, $\wedge$, $\neg$ \\
+			\hline
+			) & Desapilar hasta ( & $p\ q\ \neg\ \wedge$ & $\neg$ \\
+			\hline
+			$\wedge$ & Apilar operador & $p\ q\ \neg\ \wedge$ & $\neg$, $\wedge$ \\
+			\hline
+			$\neg$ & Apilar operador & $p\ q\ \neg\ \wedge$ & $\neg$, $\wedge$, $\neg$ \\
+			\hline
+			( & Apilar paréntesis & $p\ q\ \neg\ \wedge$ & $\neg$, $\wedge$, $\neg$, ( \\
+			\hline
+			$\neg$ & Apilar operador & $p\ q\ \neg\ \wedge$ & $\neg$, $\wedge$, $\neg$, (, $\neg$ \\
+			\hline
+			$\neg$ & Apilar operador & $p\ q\ \neg\ \wedge$ & $\neg$, $\wedge$, $\neg$, (, $\neg$, $\neg$ \\
+			\hline
+			$r$ & Agregar a salida & $p\ q\ \neg\ \wedge\ r$ & $\neg$, $\wedge$, $\neg$, (, $\neg$, $\neg$ \\
+			\hline
+			$\wedge$ & Apilar operador & $p\ q\ \neg\ \wedge\ r$ & $\neg$, $\wedge$, $\neg$, (, $\neg$, $\neg$, $\wedge$ \\
+			\hline
+			$\neg$ & Apilar operador & $p\ q\ \neg\ \wedge\ r$ & $\neg$, $\wedge$, $\neg$, (, $\neg$, $\neg$, $\wedge$, $\neg$ \\
+			\hline
+			$p$ & Agregar a salida & $p\ q\ \neg\ \wedge\ r\ p$ & $\neg$, $\wedge$, $\neg$, (, $\neg$, $\neg$, $\wedge$, $\neg$ \\
+			\hline
+			) & Desapilar hasta ( & $p\ q\ \neg\ \wedge\ r\ p\ \neg\ \wedge \neg \neg$ & $\neg$, $\wedge$, $\neg$ \\
+			\hline
+			& Vaciar pila & $p\ q\ \neg\ \wedge\ r\ p\ \neg\ \wedge \neg\ \neg\ \neg\ \wedge\ \neg$ &  \\
+			\hline
+		\end{longtable}
+	\end{center}
 	\section{Algoritmo}
 	
 	\section{Implementaci\'on}
