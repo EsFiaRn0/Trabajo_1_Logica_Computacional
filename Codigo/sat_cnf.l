@@ -35,7 +35,7 @@ void reset_stack() {
 
 %%
 
-[ \t\n]+              ;
+[ \t\n]+             ;
 "("                  ;
 "\$"                 ;
 ")"                  ;
@@ -78,9 +78,11 @@ void reset_stack() {
                         push(or_node);
                      }
 
-[a-zA-Z][a-zA-Z0-9]*  {
+[a-zA-Z][a-zA-Z0-9]*(_[0-9]+|_\{[0-9]+\})?  {
+
                         push(create_var(yytext));
-                      }
+
+                     }
 
 .                    { printf("Caracter no reconocido: %s\n", yytext); }
 

@@ -65,9 +65,20 @@ char* convert_to_postfix(const char* input) {
             token[j++] = input[i++];
             while (isalpha(input[i])) token[j++] = input[i++];
             token[j] = '\0';
-        } else if (isalnum(input[i])) {
+        } else if (isalpha(input[i])) {
             int j = 0;
+            token[j++] = input[i++];
             while (isalnum(input[i])) token[j++] = input[i++];
+            if (input[i] == '_') {
+                token[j++] = input[i++];
+                if (input[i] == '{') {
+                    token[j++] = input[i++];
+                    while (isdigit(input[i])) token[j++] = input[i++];
+                    if (input[i] == '}') token[j++] = input[i++];
+                } else {
+                    while (isdigit(input[i])) token[j++] = input[i++];
+                }
+            }
             token[j] = '\0';
         } else {
             token[0] = input[i++];

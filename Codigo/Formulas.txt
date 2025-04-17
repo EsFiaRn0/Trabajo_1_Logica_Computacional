@@ -3,3 +3,5 @@ $((p \vee q) \wedge (r \rightarrow \neg s)) \rightarrow (\neg t \vee (u \wedge v
 $((p \wedge (q \vee r)) \rightarrow (\neg s \wedge (t \vee u))) \vee v$
 $\neg ((p \rightarrow q) \vee (r \wedge \neg s)) \wedge (t \vee u)$
 $(p1 \rightarrow p2) \wedge (p2 \wedge p3) \vee (p4 \wedge \neg p5)$
+$(p_{23} \rightarrow p2) \wedge (p2 \wedge p3) \vee (p4 \wedge \neg p5)$
+$((p_1 \rightarrow p_2) \wedge (p_2 \wedge p_3)) \vee (p_4 \wedge \neg p_{53})$
