@@ -7,12 +7,6 @@
 #define MAX_STACK 100
 #define MAX_OUTPUT 2048
 
-typedef struct {
-    const char* symbol;
-    int precedence;
-    int right_associative;
-} Operator;
-
 Operator operators[] = {
     {"\\neg", 3, 1},
     {"\\wedge", 2, 0},

@@ -79,9 +79,7 @@ void reset_stack() {
                      }
 
 [a-zA-Z][a-zA-Z0-9]*(_[0-9]+|_\{[0-9]+\})?  {
-
                         push(create_var(yytext));
-
                      }
 
 .                    { printf("Caracter no reconocido: %s\n", yytext); }
