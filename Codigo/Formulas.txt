@@ -5,3 +5,6 @@ $\neg ((p \rightarrow q) \vee (r \wedge \neg s)) \wedge (t \vee u)$
 $(p1 \rightarrow p2) \wedge (p2 \wedge p3) \vee (p4 \wedge \neg p5)$
 $(p_{23} \rightarrow p2) \wedge (p2 \wedge p3) \vee (p4 \wedge \neg p5)$
 $((p_1 \rightarrow p_2) \wedge (p_2 \wedge p_3)) \vee (p_4 \wedge \neg p_{53})$
+$(p_{1} \rightarrow p_{2}) \vee (p_{3} \wedge p_{4}) \rightarrow (p_{5} \rightarrow p_{6}) \vee (p_{7} \wedge p_{8}) \rightarrow (p_{9} \rightarrow p_{10}) \vee (p_{11} \wedge p_{12}) \rightarrow (p_{13} \rightarrow p_{14}) \vee (p_{15} \wedge p_{16}) \rightarrow (p_{17} \rightarrow p_{18}) \vee (p_{19} \wedge p_{20})$
+$$
+$((p \rightarrow q) \wedge (\neg r \vee p))$
