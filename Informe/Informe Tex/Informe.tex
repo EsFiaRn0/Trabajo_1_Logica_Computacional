@@ -1,3 +1,13 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Topico     : Informe Sat Lineal
+%
+% Autor      : Miguel Olivares Morales,Benjamín Riveros Landeros.
+%
+% Santiago de Chile, 5/4/2022
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \documentclass{report}
 
 \usepackage{epsfig}
@@ -8,6 +18,8 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{tikz}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 \renewcommand*\thesection{\arabic{section}}
 
@@ -130,7 +142,48 @@
 			\hline
 		\end{longtable}
 	\end{center}
+	\newpage
 	\section{Algoritmo}
+	\subsection{Conversión a Notación Postfija}
+	Para transformar las fórmulas lógicas desde su forma infija a una notación postfija (también conocida como notación polaca inversa), se implementó un algoritmo inspirado en el \textit{Shunting Yard Algorithm} de Edsger Dijkstra. Esta notación facilita el análisis y la evaluación de fórmulas lógicas, ya que elimina la ambigüedad del orden de operaciones y permite un procesamiento más eficiente.
+
+	\begin{algorithm}[H]
+	\caption{Conversión a notación postfija (inspirado en Shunting Yard Algorithm)}
+	\begin{algorithmic}[1]
+	\State Inicializar una pila vacía \texttt{stack}
+	\State Inicializar una cadena vacía \texttt{output}
+	\For{cada token en la fórmula de entrada}
+		\If{el token es un operando}
+			\State Agregar token a \texttt{output}
+		\ElsIf{el token es un operador}
+			\While{la pila no está vacía y el tope es un operador con mayor o igual precedencia}
+				\State Desapilar operador y agregarlo a \texttt{output}
+			\EndWhile
+			\State Apilar el operador actual
+		\ElsIf{el token es un paréntesis de apertura}
+			\State Apilar el token
+		\ElsIf{el token es un paréntesis de cierre}
+			\While{el tope de la pila no es un paréntesis de apertura}
+				\State Desapilar operador y agregarlo a \texttt{output}
+			\EndWhile
+			\If{la pila está vacía}
+				\State Reportar error: paréntesis desbalanceados
+			\Else
+				\State Desapilar el paréntesis de apertura
+			\EndIf
+		\EndIf
+	\EndFor
+	\While{la pila no está vacía}
+		\If{el tope es un paréntesis}
+			\State Reportar error: paréntesis desbalanceados
+		\Else
+			\State Desapilar operador y agregarlo a \texttt{output}
+		\EndIf
+	\EndWhile
+	\State \Return \texttt{output}
+	\end{algorithmic}
+	\end{algorithm}
+
 	\section{Implementaci\'on}
 	
 	\section{Conclusiones}
