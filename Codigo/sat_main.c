@@ -59,6 +59,15 @@ int main(int argc, char* argv[]) {
 
         printf("Fórmula en la gramatica pedida por sat_lineal:\n");
         print_formula(cnf);
+
+        int num_vars = get_num_vars(cnf);
+
+        if (solve_sat(cnf, num_vars)){
+            printf("\tSATISFACIBLE.\n");
+        }else{
+            printf("\tNO-SATISFACIBLE.\n");
+        }
+
         printf("\n");
 
         free(postfix);

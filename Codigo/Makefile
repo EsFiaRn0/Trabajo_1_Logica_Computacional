@@ -21,5 +21,9 @@ lex.yy.c: sat_cnf.l logic.h
 lex.yy.o: lex.yy.c
 	$(CC) $(CFLAGS) -c lex.yy.c
 
+# sat_solver (TEST)
+sat_solver.o: sat_solver.c logic.h
+	$(CC) $(CFLAGS) -c sat_solver.c
+
 clean:
 	rm -f *.o lex.yy.c sat_cnf

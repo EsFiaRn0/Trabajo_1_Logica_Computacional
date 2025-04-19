@@ -170,3 +170,67 @@ void free_tree(Node* node) {
     free(node);
     node = NULL;
 }
+
+static void mark_vars(Node* node, bool vars[26]) {
+    if (!node) return;
+
+    if (node->type == VAR && node->var_name) {
+        char c = node->var_name[0];
+        if (c >= 'A' && c <= 'Z')
+            vars[c - 'A'] = true;
+    }
+
+    mark_vars(node->left, vars);
+    mark_vars(node->right, vars);
+}
+
+int get_num_vars(Node* node) {
+    bool vars[26] = {false};
+
+    mark_vars(node, vars);
+
+    int count = 0;
+    for (int i = 0; i < 26; i++)
+        if (vars[i]) count++;
+
+    return count;
+}
+
+// Evalúa una fórmula con una asignación de verdad
+bool eval_formula(Node* node, bool assignment[26]) {
+    if (!node) return false;
+
+    switch (node->type) {
+        case VAR:
+            return assignment[node->var_name[0] - 'A'];
+        case NOT:
+            return !eval_formula(node->left, assignment);
+        case AND:
+            return eval_formula(node->left, assignment) &&
+                   eval_formula(node->right, assignment);
+        case OR:
+            return eval_formula(node->left, assignment) ||
+                   eval_formula(node->right, assignment);
+        default:
+            return false;
+    }
+}
+
+// Backtracking
+bool solve_rec(Node* node, bool assignment[26], int idx, int max_vars) {
+    if (idx == max_vars)
+        return eval_formula(node, assignment);
+
+    assignment[idx] = false;
+    if (solve_rec(node, assignment, idx + 1, max_vars)) return true;
+
+    assignment[idx] = true;
+    if (solve_rec(node, assignment, idx + 1, max_vars)) return true;
+
+    return false;
+}
+
+bool solve_sat(Node* formula, int num_vars) {
+    bool assignment[26] = {false};
+    return solve_rec(formula, assignment, 0, num_vars);
+}

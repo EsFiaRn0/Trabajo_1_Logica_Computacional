@@ -1,6 +1,8 @@
 #ifndef LOGIC_H
 #define LOGIC_H
 
+#include <stdbool.h>
+
 typedef enum {
     VAR,       // Variable proposicional
     NOT,       // Negación
@@ -28,5 +30,8 @@ Node* to_cnf(Node* node);
 
 void print_formula(Node* node);
 void free_tree(Node* node);
+
+int get_num_vars(Node* formula);
+bool solve_sat(Node* formula, int num_vars);
 
 #endif
