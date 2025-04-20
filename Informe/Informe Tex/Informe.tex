@@ -18,8 +18,8 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{tikz}
-\usepackage{algorithm}
-\usepackage{algpseudocode}
+\usepackage[linesnumbered]{algorithm2e}
+
 
 \renewcommand*\thesection{\arabic{section}}
 
@@ -29,6 +29,7 @@
 \hyphenation{ins-truc-ciones}
 
 \begin{document}
+	\RestyleAlgo{ruled}
 	\begin{titlepage}
 		\begin{center}
 			\includegraphics[width=0.5\textwidth]{../Imagenes/LOGO-USACH_COLOR}
@@ -144,45 +145,75 @@
 	\end{center}
 	\newpage
 	\section{Algoritmo}
+	\subsection{Codificación de fórmula}
+	\begin{algorithm}
+		\caption{Algoritmo recursivo $T(\phi)$ para codificar una fórmula booleana $\phi$}
+		\KwIn{$\phi$}
+		\KwOut{$T(\phi)$}
+		\If{$\phi$ es un átomo proposicional $p$}{
+			\Return{$p$}
+		}
+		\If{$\phi$ es una negación ($\neg \phi$)}{
+			\Return{$\neg T(\phi)$}
+		}
+		\If{$\phi$ es una conjunción ($\phi_1 \wedge \phi_2$)}{
+			\Return{$T(\phi_1) \wedge T(\phi_2)$}
+		}
+		\If{$\phi$ es una disyunción ($\phi_1 \vee \phi_2$)}{
+			\Return{$\neg(\neg T(\phi_1) \wedge \neg T(\phi_2))$}
+		}
+		\If{$\phi$ es una implicancia ($\phi_1 \rightarrow \phi_2$)}{
+			\Return{$\neg(T(\phi_1) \wedge \neg T(\phi_2))$}
+		}
+		\If{$\phi$ tiene una fórmula no reconocida}{
+			Reportar error: fórmula inválida			
+		}
+	\end{algorithm}
 	\subsection{Conversión a Notación Postfija}
 	Para transformar las fórmulas lógicas desde su forma infija a una notación postfija (también conocida como notación polaca inversa), se implementó un algoritmo inspirado en el \textit{Shunting Yard Algorithm} de Edsger Dijkstra. Esta notación facilita el análisis y la evaluación de fórmulas lógicas, ya que elimina la ambigüedad del orden de operaciones y permite un procesamiento más eficiente.
-
-	\begin{algorithm}[H]
-	\caption{Conversión a notación postfija (inspirado en Shunting Yard Algorithm)}
-	\begin{algorithmic}[1]
-	\State Inicializar una pila vacía \texttt{stack}
-	\State Inicializar una cadena vacía \texttt{output}
-	\For{cada token en la fórmula de entrada}
-		\If{el token es un operando}
-			\State Agregar token a \texttt{output}
-		\ElsIf{el token es un operador}
-			\While{la pila no está vacía y el tope es un operador con mayor o igual precedencia}
-				\State Desapilar operador y agregarlo a \texttt{output}
-			\EndWhile
-			\State Apilar el operador actual
-		\ElsIf{el token es un paréntesis de apertura}
-			\State Apilar el token
-		\ElsIf{el token es un paréntesis de cierre}
-			\While{el tope de la pila no es un paréntesis de apertura}
-				\State Desapilar operador y agregarlo a \texttt{output}
-			\EndWhile
-			\If{la pila está vacía}
-				\State Reportar error: paréntesis desbalanceados
-			\Else
-				\State Desapilar el paréntesis de apertura
-			\EndIf
-		\EndIf
-	\EndFor
-	\While{la pila no está vacía}
-		\If{el tope es un paréntesis}
-			\State Reportar error: paréntesis desbalanceados
-		\Else
-			\State Desapilar operador y agregarlo a \texttt{output}
-		\EndIf
-	\EndWhile
-	\State \Return \texttt{output}
-	\end{algorithmic}
+	\newpage
+	\begin{algorithm}[hbt!]
+		\caption{Conversión a notación postfija (inspirado en Shunting Yard Algorithm)}
+		\KwIn{Fórmula codificada $T(\phi)$}
+		\KwOut{Fórmula $T(\phi)$ en notación postfija}
+		Inicializar una pila vacía \texttt{stack} \\
+		Inicializar una cadena vacía \texttt{output} \\
+		\For{cada token en la fórmula de entrada}{
+			\If{el token es un operando}{
+				Agregar token a \texttt{output}
+			}
+			\ElseIf{el token es un operador}{
+				\While{pila no vacía y tope operador con mayor o igual precedencia}{
+					Desapilar operador y agregarlo a \texttt{output}
+				}
+				Apilar el operador actual
+			}
+			\ElseIf{el token es un paréntesis de apertura}{
+				Apilar el token
+			}
+			\ElseIf{el token es un paréntesis de cierre}{
+				\While{tope de pila no es paréntesis de apertura}{
+					Desapilar operador y agregarlo a \texttt{output}
+				}
+				\If{pila vacía}{
+					Reportar error: paréntesis desbalanceados
+				}
+				\Else{
+					Desapilar paréntesis de apertura
+				}
+			}
+		}
+		\While{pila no vacía}{
+			\If{tope es paréntesis}{
+				Reportar error: paréntesis desbalanceados
+			}
+			\Else{
+				Desapilar operador y agregarlo a \texttt{output}
+			}
+		}
+		\KwRet{} \texttt{output}
 	\end{algorithm}
+	
 
 	\section{Implementaci\'on}
 	
