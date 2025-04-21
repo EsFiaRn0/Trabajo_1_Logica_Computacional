@@ -6,6 +6,17 @@
 bool is_satisfied(Node* clause, bool* assignment, int num_vars);
 bool backtrack(Node* formula, bool* assignment, int num_vars, int index);
 
+/**
+ * Verifica si una cláusula está satisfecha bajo una asignación dada.
+ *
+ * Entrada:
+ *   clause - Nodo que representa la cláusula (puede ser literal o su negación)
+ *   assignment - Arreglo de valores booleanos para cada variable (por índice)
+ *   num_vars - Número total de variables
+ *
+ * Salida:
+ *   true si la cláusula está satisfecha, false en caso contrario
+ */
 bool is_satisfied(Node* clause, bool* assignment, int num_vars){
 
     if (!clause) return false;
@@ -20,6 +31,20 @@ bool is_satisfied(Node* clause, bool* assignment, int num_vars){
     return false;
 }
 
+
+/**
+ * Algoritmo de backtracking que prueba todas las asignaciones posibles
+ * para verificar la satisfacibilidad de la fórmula.
+ *
+ * Entrada:
+ *   formula - Árbol lógico en CNF (lista de cláusulas unidas por conjunción)
+ *   assignment - Arreglo de valores booleanos para las variables
+ *   num_vars - Número total de variables
+ *   index - Índice actual de variable que se está asignando
+ *
+ * Salida:
+ *   true si se encuentra una asignación satisfactoria, false en caso contrario
+ */
 bool backtrack(Node* formula, bool* assignment, int num_vars, int index){
     if (index == num_vars){
         Node* current_clause = formula;
@@ -45,6 +70,16 @@ bool backtrack(Node* formula, bool* assignment, int num_vars, int index){
     return false;
 }
 
+/**
+ * Determina si una fórmula en CNF es satisfacible utilizando backtracking.
+ *
+ * Entrada:
+ *   formula - Árbol de nodos en forma normal conjuntiva (CNF)
+ *   num_vars - Número total de variables proposicionales
+ *
+ * Salida:
+ *   true si la fórmula es satisfacible, false si no lo es
+ */
 bool solve_sat(Node* formula, int num_vars){
     bool* assignment = malloc(num_vars * sizeof(bool));
     if (!assignment) {

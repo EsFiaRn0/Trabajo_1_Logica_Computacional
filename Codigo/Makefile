@@ -1,10 +1,10 @@
 CC = gcc
 CFLAGS = -Wall -g
 
-all: sat_cnf
+all: tarea1.exe
 
-sat_cnf: sat_main.o logic.o postfix_converter.o lex.yy.o
-	$(CC) $(CFLAGS) -o sat_cnf sat_main.o logic.o postfix_converter.o lex.yy.o
+tarea1.exe: sat_main.o logic.o postfix_converter.o lex.yy.o
+	$(CC) $(CFLAGS) -o tarea1.exe sat_main.o logic.o postfix_converter.o lex.yy.o
 
 sat_main.o: sat_main.c logic.h postfix_converter.h
 	$(CC) $(CFLAGS) -c sat_main.c
@@ -21,9 +21,8 @@ lex.yy.c: sat_cnf.l logic.h
 lex.yy.o: lex.yy.c
 	$(CC) $(CFLAGS) -c lex.yy.c
 
-# sat_solver (TEST)
 sat_solver.o: sat_solver.c logic.h
 	$(CC) $(CFLAGS) -c sat_solver.c
 
 clean:
-	rm -f *.o lex.yy.c sat_cnf
+	rm -f *.o lex.yy.c tarea1.exe

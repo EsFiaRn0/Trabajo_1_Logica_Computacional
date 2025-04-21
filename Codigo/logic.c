@@ -4,6 +4,15 @@
 #include <string.h>
 #include "logic.h"
 
+/**
+ * Crea un nodo de tipo variable (VAR) en el árbol sintáctico.
+ *
+ * Entrada:
+ *   name - Nombre de la variable (por ejemplo, "P")
+ *
+ * Salida:
+ *   Puntero al nodo creado con el nombre y sin hijos
+ */
 Node* create_var(const char* name) {
     Node* node = (Node*)malloc(sizeof(Node));
     if (!node) {
@@ -16,6 +25,17 @@ Node* create_var(const char* name) {
     return node;
 }
 
+/**
+ * Crea un nodo de operación binaria (AND, OR, IMPL) en el árbol sintáctico.
+ *
+ * Entradas:
+ *   type  - Tipo de operación lógica
+ *   left  - Hijo izquierdo
+ *   right - Hijo derecho
+ *
+ * Salida:
+ *   Puntero al nodo de operación creado
+ */
 Node* create_op(NodeType type, Node* left, Node* right) {
     Node* node = (Node*) malloc(sizeof(Node));
     if (!node) {
@@ -29,6 +49,15 @@ Node* create_op(NodeType type, Node* left, Node* right) {
     return node;
 }
 
+/**
+ * Crea un nodo de negación lógica (NOT) con un único hijo.
+ *
+ * Entrada:
+ *   child - Nodo hijo a negar
+ *
+ * Salida:
+ *   Puntero al nodo NOT creado
+ */
 Node* create_not(Node* child) {
     Node* node = (Node*) malloc(sizeof(Node));
     if (!node) {
@@ -42,6 +71,15 @@ Node* create_not(Node* child) {
     return node;
 }
 
+/**
+ * Elimina las implicaciones (→) del árbol, reemplazándolas por una disyunción.
+ *
+ * Entrada:
+ *   node - Árbol de nodos con posibles implicaciones
+ *
+ * Salida:
+ *   Árbol equivalente sin implicaciones (A → B se transforma en ~A ∨ B)
+ */
 Node* impl_free(Node* node) {
     if (!node) return NULL;
 
@@ -62,6 +100,15 @@ Node* impl_free(Node* node) {
     }
 }
 
+/**
+ * Elimina las implicaciones (→) del árbol, reemplazándolas por una disyunción.
+ *
+ * Entrada:
+ *   node - Árbol de nodos con posibles implicaciones
+ *
+ * Salida:
+ *   Árbol equivalente sin implicaciones (A → B se transforma en ~A ∨ B)
+ */
 Node* copy_tree(Node* node) {
     if (!node) return NULL;
 
@@ -77,6 +124,15 @@ Node* copy_tree(Node* node) {
     return new_node;
 }
 
+/**
+ * Aplica la ley distributiva para transformar una disyunción de conjunciones en CNF.
+ *
+ * Entradas:
+ *   a, b - Subárboles OR que podrían contener AND
+ *
+ * Salida:
+ *   Árbol reestructurado aplicando distribución
+ */
 Node* distribute(Node* a, Node* b) {
     if (!a || !b) return NULL;
 
@@ -93,6 +149,15 @@ Node* distribute(Node* a, Node* b) {
     }
 }
 
+/**
+ * Convierte un árbol lógico a su Forma Normal Conjuntiva (CNF).
+ *
+ * Entrada:
+ *   node - Árbol lógico (sin implicaciones)
+ *
+ * Salida:
+ *   Árbol convertido a CNF
+ */
 Node* to_cnf(Node* node) {
     if (!node) return NULL;
 
@@ -119,7 +184,12 @@ Node* to_cnf(Node* node) {
 }
 
 
-// Función para imprimir la fórmula.
+/**
+ * Imprime una fórmula lógica en notación legible (infija).
+ *
+ * Entrada:
+ *   node - Árbol sintáctico de la fórmula
+ */
 void print_formula(Node* node) {
     if (!node) return;
 
@@ -155,7 +225,12 @@ void print_formula(Node* node) {
     }
 }
 
-// Función para liberar todo el árbol
+/**
+ * Libera la memoria asignada a todo un árbol de nodos.
+ *
+ * Entrada:
+ *   node - Árbol a liberar
+ */
 void free_tree(Node* node) {
     if (!node) return;
 
@@ -171,6 +246,13 @@ void free_tree(Node* node) {
     node = NULL;
 }
 
+/**
+ * Marca las variables presentes en el árbol lógico usando un arreglo de flags.
+ *
+ * Entrada:
+ *   node - Árbol lógico
+ *   vars - Arreglo booleano de tamaño 26 (A-Z) para marcar variables usadas
+ */
 static void mark_vars(Node* node, bool vars[26]) {
     if (!node) return;
 
@@ -184,6 +266,15 @@ static void mark_vars(Node* node, bool vars[26]) {
     mark_vars(node->right, vars);
 }
 
+/**
+ * Cuenta cuántas variables proposicionales distintas hay en un árbol lógico.
+ *
+ * Entrada:
+ *   node - Árbol lógico
+ *
+ * Salida:
+ *   Cantidad de variables únicas encontradas (basado en A-Z)
+ */
 int get_num_vars(Node* node) {
     bool vars[26] = {false};
 
@@ -196,7 +287,16 @@ int get_num_vars(Node* node) {
     return count;
 }
 
-// Evalúa una fórmula con una asignación de verdad
+/**
+ * Evalúa una fórmula lógica con una asignación de valores de verdad.
+ *
+ * Entradas:
+ *   node       - Árbol lógico a evaluar
+ *   assignment - Arreglo booleano con valores de verdad para cada variable (A-Z)
+ *
+ * Salida:
+ *   Resultado de la evaluación (true o false)
+ */
 bool eval_formula(Node* node, bool assignment[26]) {
     if (!node) return false;
 
@@ -216,7 +316,18 @@ bool eval_formula(Node* node, bool assignment[26]) {
     }
 }
 
-// Backtracking
+/**
+ * Realiza backtracking para encontrar una asignación que satisfaga la fórmula.
+ *
+ * Entradas:
+ *   node       - Fórmula lógica en forma de árbol
+ *   assignment - Arreglo de verdad actual en exploración
+ *   idx        - Índice actual (variable A-Z) a probar
+ *   max_vars   - Número total de variables relevantes
+ *
+ * Salida:
+ *   true si se encuentra una asignación satisfactoria, false si no
+ */
 bool solve_rec(Node* node, bool assignment[26], int idx, int max_vars) {
     if (idx == max_vars)
         return eval_formula(node, assignment);
@@ -230,6 +341,16 @@ bool solve_rec(Node* node, bool assignment[26], int idx, int max_vars) {
     return false;
 }
 
+/**
+ * Determina si una fórmula en CNF es satisfacible utilizando backtracking.
+ *
+ * Entrada:
+ *   formula   - Árbol de nodos en forma normal conjuntiva (CNF)
+ *   num_vars  - Número total de variables proposicionales
+ *
+ * Salida:
+ *   true si la fórmula es satisfacible, false si no lo es
+ */
 bool solve_sat(Node* formula, int num_vars) {
     bool assignment[26] = {false};
     return solve_rec(formula, assignment, 0, num_vars);

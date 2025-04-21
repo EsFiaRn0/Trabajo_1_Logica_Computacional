@@ -8,6 +8,12 @@
 Node* stack[MAX_STACK];
 int top = 0;
 
+/**
+ * Inserta un nodo en la pila.
+ * 
+ * Entrada:
+ *   n - Puntero al nodo a insertar
+ */
 void push(Node* n) {
     if (top < MAX_STACK) {
         stack[top++] = n;
@@ -17,6 +23,12 @@ void push(Node* n) {
     }
 }
 
+/**
+ * Extrae y devuelve el nodo en el tope de la pila.
+ * 
+ * Salida:
+ *   Puntero al nodo en el tope de la pila
+ */
 Node* pop() {
     if (top > 0) {
         return stack[--top];
@@ -26,6 +38,9 @@ Node* pop() {
     }
 }
 
+/**
+ * Reinicia el stack a vacío.
+ */
 void reset_stack() {
     top = 0;
 }
@@ -35,10 +50,10 @@ void reset_stack() {
 
 %%
 
-[ \t\n]+             ;
-"("                  ;
-"\$"                 ;
-")"                  ;
+[ \t\n]+             ;  // Ignora espacios, tabulaciones y saltos de línea
+"("                  ;  // Ignora paréntesis abiertos
+"\$"                 ;  // Ignora delimitador de fórmula
+")"                  ;  // Ignora paréntesis cerrados
 
 "\\rightarrow"        {
                         if (top < 2) {

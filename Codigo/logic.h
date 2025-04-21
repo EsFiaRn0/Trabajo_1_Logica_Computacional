@@ -11,13 +11,13 @@ typedef enum {
     IMPL       // Implicación
 } NodeType;
 
-// Nodo del árbol lógico
+// Estructura que representa un nodo en el árbol lógico
 typedef struct Node {
-    NodeType type;
-    char* var_name; 
+    NodeType type;      // Tipo del nodo (variable, operador lógico)
+    char* var_name;     // Nombre de la variable si es un nodo VAR
 
-    struct Node* left;
-    struct Node* right;
+    struct Node* left;  // Hijo izquierdo del nodo
+    struct Node* right; // Hijo derecho del nodo
 } Node;
 
 Node* create_var(const char* name);

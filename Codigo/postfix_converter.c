@@ -7,6 +7,9 @@
 #define MAX_STACK 100
 #define MAX_OUTPUT 2048
 
+/**
+ * Estructura que define los operadores lógicos con su precedencia
+ */
 Operator operators[] = {
     {"\\neg", 3, 1},
     {"\\wedge", 2, 0},
@@ -15,6 +18,15 @@ Operator operators[] = {
     {NULL, 0, 0}
 };
 
+/**
+ * Devuelve la precedencia de un operador lógico dado.
+ * 
+ * Entrada:
+ *   op - cadena con el símbolo del operador (ej: "\\neg")
+ * 
+ * Salida:
+ *   Entero con el nivel de precedencia (mayor valor = mayor precedencia)
+ */
 int precedence(const char* op) {
     for (int i = 0; operators[i].symbol; i++) {
         if (strcmp(op, operators[i].symbol) == 0)
@@ -23,6 +35,15 @@ int precedence(const char* op) {
     return -1;
 }
 
+/**
+ * Determina si un operador lógico es asociativo por la derecha.
+ * 
+ * Entrada:
+ *   op - cadena con el símbolo del operador
+ * 
+ * Salida:
+ *   1 si es asociativo por la derecha, 0 en caso contrario
+ */
 int is_right_associative(const char* op) {
     for (int i = 0; operators[i].symbol; i++) {
         if (strcmp(op, operators[i].symbol) == 0)
@@ -31,6 +52,15 @@ int is_right_associative(const char* op) {
     return 0;
 }
 
+/**
+ * Verifica si un token es un operador lógico conocido.
+ * 
+ * Entrada:
+ *   token - cadena que representa el token a evaluar
+ * 
+ * Salida:
+ *   1 si es un operador, 0 en caso contrario
+ */
 int is_operator(const char* token) {
     for (int i = 0; operators[i].symbol; i++) {
         if (strcmp(token, operators[i].symbol) == 0)
@@ -39,6 +69,17 @@ int is_operator(const char* token) {
     return 0;
 }
 
+/**
+ * Convierte una fórmula lógica en notación LaTeX infija a notación postfija.
+ * Utiliza el algoritmo de Shunting Yard de Dijkstra adaptado para lógica proposicional.
+ * 
+ * Entrada:
+ *   input - cadena con la fórmula lógica en notación infija (ej: "\\neg (A \\vee B)")
+ * 
+ * Salida:
+ *   Cadena nueva con la fórmula en notación postfija, separada por espacios.
+ *   La memoria debe liberarse por el usuario con free().
+ */
 char* convert_to_postfix(const char* input) {
     char output[MAX_OUTPUT] = "";
     const char* stack[MAX_STACK];

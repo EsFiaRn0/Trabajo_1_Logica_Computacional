@@ -2,9 +2,9 @@
 #define POSTFIX_CONVERTER_H
 
 typedef struct {
-    const char* symbol;
-    int precedence;
-    int right_associative;
+    const char* symbol;     // Símbolo del operador
+    int precedence;         // Precedencia del operador        
+    int right_associative;  // 1 si es asociativo por la derecha, 0 si no
 } Operator;
 
 int precedence(const char* op);
