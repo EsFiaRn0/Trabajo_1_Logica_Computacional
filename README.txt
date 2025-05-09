@@ -1,5 +1,24 @@
+# Tarea 1 - Lógica Proposicional
+## Estructura de Directorios:
+-------------------------
+- `codigos/`:
+    -expresion.txt
+    -expresion1.txt:
+    -expresion2.txt:
+    -logic.c:
+    -logic.h:
+    -Makefile:
+    -postfix_converter.c:
+    -postfix_converter.h:
+    -sat_lineal.l
+    -sat_main.c
+    -sat_solver.c
+- `Informe/`:
+    - `Imagenes/`:
+    - `Informe Tex/`:
 
-## Requisitos
+## Requisitos:
+-------------------------
 
 - `gcc` – Compilador de C
 - `flex` – Generador de analizadores léxicos
@@ -7,7 +26,7 @@
 
 ---
 ## Compilación
-
+-------------------------
 
 ### Opción 1: Usando make
 
@@ -27,21 +46,22 @@ gcc -Wall -g -o tarea1.exe sat_main.o logic.o postfix_converter.o lex.yy.o -lfl
 
 
 Esto generará el ejecutable llamado tarea1.exe.
----
 
 ## Ejecución
+-------------------------
 
-Prepará un archivo llamado expresion.txt con una fórmula lógica, por ejemplo:
+Se tendra que preparar un archivo llamado expresion.txt con una fórmula lógica, por ejemplo:
 
 ```bash
 $p \wedge \neg p$
 
-Ejecutá el programa pasando ese archivo como entrada estándar:
+Se tendra el programa pasando ese archivo como entrada estándar:
 
 ```bash
 ./tarea1.exe < expresion.txt
 
 ##  Limpieza
+-------------------------
 
 Para eliminar los archivos compilados y el ejecutable:
 

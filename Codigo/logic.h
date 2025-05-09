@@ -25,9 +25,6 @@ Node* create_op(NodeType type, Node* left, Node* right);
 Node* create_not(Node* child);
 Node* copy_tree(Node* node);
 
-Node* impl_free(Node* node);
-Node* to_cnf(Node* node);
-
 void print_formula(Node* node);
 void free_tree(Node* node);
 

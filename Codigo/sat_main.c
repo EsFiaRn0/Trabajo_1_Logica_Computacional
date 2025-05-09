@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h> 
+#include <unistd.h>
 #include "postfix_converter.h"
 #include "logic.h"
 
@@ -14,15 +14,17 @@ extern void reset_stack();
 int main(int argc, char* argv[]) {
     if (!isatty(fileno(stdin)) && argc == 1) {
         FILE* input_file = stdin;
-
         char line[2048];
+
         while (fgets(line, sizeof(line), input_file)) {
             line[strcspn(line, "\n")] = 0;
-
             if (strlen(line) == 0) continue;
 
             char* postfix = convert_to_postfix(line);
-            printf("Postfijo: %s\n", postfix);
+            if (postfix == NULL) {
+                printf("NO-SOLUTION\n");
+                continue;
+            }
 
             FILE* temp = fopen("temp_input.txt", "w");
             if (!temp) {
@@ -41,7 +43,14 @@ int main(int argc, char* argv[]) {
             }
 
             reset_stack();
-            yylex();
+            if (yylex() != 0) {
+                fclose(yyin);
+                remove("temp_input.txt");
+                free(postfix);
+                continue;
+            }
+
+            printf("Postfijo: %s\n", postfix);
 
             if (top != 1) {
                 fprintf(stderr, "Error: fórmula mal formada (top = %d)\n", top);
@@ -52,24 +61,22 @@ int main(int argc, char* argv[]) {
             }
 
             Node* root = stack[0];
-            Node* cnf = to_cnf(root);
 
-            printf("Fórmula en la gramática pedida por sat_lineal:\n");
-            print_formula(cnf);
+            printf("Fórmula transformada según la gramática T:\n");
+            print_formula(root);
 
-            int num_vars = get_num_vars(cnf);
+            int num_vars = get_num_vars(root);
 
-            if (solve_sat(cnf, num_vars)) {
+            if (solve_sat(root, num_vars)) {
                 printf("\tSATISFACIBLE.\n");
             } else {
                 printf("\tNO-SATISFACIBLE.\n");
             }
-            
+
             printf("\n");
 
             free(postfix);
-            free_tree(cnf);
-
+            free_tree(root);
             fclose(yyin);
             remove("temp_input.txt");
         }

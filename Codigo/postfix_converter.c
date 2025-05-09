@@ -4,13 +4,10 @@
 #include <ctype.h>
 #include "postfix_converter.h"
 
-#define MAX_STACK 100
-#define MAX_OUTPUT 2048
+#define MAX_STACK 10000
+#define MAX_OUTPUT 16384
 
-/**
- * Estructura que define los operadores lógicos con su precedencia
- */
-Operator operators[] = {
+static Operator operators[] = {
     {"\\neg", 3, 1},
     {"\\wedge", 2, 0},
     {"\\vee", 1, 0},
@@ -18,70 +15,35 @@ Operator operators[] = {
     {NULL, 0, 0}
 };
 
-/**
- * Devuelve la precedencia de un operador lógico dado.
- * 
- * Entrada:
- *   op - cadena con el símbolo del operador (ej: "\\neg")
- * 
- * Salida:
- *   Entero con el nivel de precedencia (mayor valor = mayor precedencia)
- */
 int precedence(const char* op) {
-    for (int i = 0; operators[i].symbol; i++) {
+    for (int i = 0; operators[i].symbol != NULL; i++) {
         if (strcmp(op, operators[i].symbol) == 0)
             return operators[i].precedence;
     }
     return -1;
 }
 
-/**
- * Determina si un operador lógico es asociativo por la derecha.
- * 
- * Entrada:
- *   op - cadena con el símbolo del operador
- * 
- * Salida:
- *   1 si es asociativo por la derecha, 0 en caso contrario
- */
 int is_right_associative(const char* op) {
-    for (int i = 0; operators[i].symbol; i++) {
+    for (int i = 0; operators[i].symbol != NULL; i++) {
         if (strcmp(op, operators[i].symbol) == 0)
             return operators[i].right_associative;
     }
     return 0;
 }
 
-/**
- * Verifica si un token es un operador lógico conocido.
- * 
- * Entrada:
- *   token - cadena que representa el token a evaluar
- * 
- * Salida:
- *   1 si es un operador, 0 en caso contrario
- */
 int is_operator(const char* token) {
-    for (int i = 0; operators[i].symbol; i++) {
+    for (int i = 0; operators[i].symbol != NULL; i++) {
         if (strcmp(token, operators[i].symbol) == 0)
             return 1;
     }
     return 0;
 }
 
-/**
- * Convierte una fórmula lógica en notación LaTeX infija a notación postfija.
- * Utiliza el algoritmo de Shunting Yard de Dijkstra adaptado para lógica proposicional.
- * 
- * Entrada:
- *   input - cadena con la fórmula lógica en notación infija (ej: "\\neg (A \\vee B)")
- * 
- * Salida:
- *   Cadena nueva con la fórmula en notación postfija, separada por espacios.
- *   La memoria debe liberarse por el usuario con free().
- */
 char* convert_to_postfix(const char* input) {
-    char output[MAX_OUTPUT] = "";
+    char output[MAX_OUTPUT];
+    output[0] = '\0';
+    int out_pos = 0;
+
     const char* stack[MAX_STACK];
     int top = 0;
 
@@ -91,10 +53,11 @@ char* convert_to_postfix(const char* input) {
         if (isspace(input[i]) || input[i] == '$') {
             i++;
             continue;
-        } else if (input[i] == '(' || input[i] == ')') {
-            token[0] = input[i];
+        }
+
+        if (input[i] == '(' || input[i] == ')') {
+            token[0] = input[i++];
             token[1] = '\0';
-            i++;
         } else if (input[i] == '\\') {
             int j = 0;
             token[j++] = input[i++];
@@ -121,38 +84,48 @@ char* convert_to_postfix(const char* input) {
         }
 
         if (is_operator(token)) {
-            while (top > 0 && is_operator(stack[top - 1]) &&
-                ((precedence(stack[top - 1]) > precedence(token)) ||
-                 (precedence(stack[top - 1]) == precedence(token) && !is_right_associative(token)))) {
-                strcat(output, stack[--top]);
-                strcat(output, " ");
+            while (top > 0 && is_operator(stack[top - 1])) {
+                const char* top_op = stack[top - 1];
+                if ((precedence(top_op) > precedence(token)) ||
+                    (precedence(top_op) == precedence(token) && !is_right_associative(token))) {
+                    out_pos += snprintf(output + out_pos, MAX_OUTPUT - out_pos, "%s ", stack[--top]);
+                    free((void*)stack[top]);
+                } else {
+                    break;
+                }
             }
             stack[top++] = strdup(token);
         } else if (strcmp(token, "(") == 0) {
             stack[top++] = strdup(token);
         } else if (strcmp(token, ")") == 0) {
-            while (top > 0 && strcmp(stack[top - 1], "(") != 0) {
-                strcat(output, stack[--top]);
-                strcat(output, " ");
+            int matched = 0;
+            while (top > 0) {
+                if (strcmp(stack[top - 1], "(") == 0) {
+                    free((void*)stack[--top]);
+                    matched = 1;
+                    break;
+                }
+                out_pos += snprintf(output + out_pos, MAX_OUTPUT - out_pos, "%s ", stack[--top]);
+                free((void*)stack[top]);
             }
-            if (top == 0) {
+            if (!matched) {
                 fprintf(stderr, "Error: paréntesis desbalanceados\n");
-                exit(1);
+                while (--top >= 0) free((void*)stack[top]);
+                return NULL;
             }
-            free((void*)stack[--top]);
         } else {
-            strcat(output, token);
-            strcat(output, " ");
+            out_pos += snprintf(output + out_pos, MAX_OUTPUT - out_pos, "%s ", token);
         }
     }
 
     while (top > 0) {
         if (strcmp(stack[top - 1], "(") == 0) {
             fprintf(stderr, "Error: paréntesis desbalanceados\n");
-            exit(1);
+            while (--top >= 0) free((void*)stack[top]);
+            return NULL;
         }
-        strcat(output, stack[--top]);
-        strcat(output, " ");
+        out_pos += snprintf(output + out_pos, MAX_OUTPUT - out_pos, "%s ", stack[--top]);
+        free((void*)stack[top]);
     }
 
     return strdup(output);

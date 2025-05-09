@@ -1,0 +1,1 @@
+$((p_1 \rightarrow \neg p_1) \wedge (\neg p_1 \rightarrow p_1))$

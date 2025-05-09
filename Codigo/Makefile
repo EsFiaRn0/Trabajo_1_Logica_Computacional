@@ -15,8 +15,8 @@ logic.o: logic.c logic.h
 postfix_converter.o: postfix_converter.c postfix_converter.h
 	$(CC) $(CFLAGS) -c postfix_converter.c
 
-lex.yy.c: sat_cnf.l logic.h
-	flex sat_cnf.l
+lex.yy.c: sat_lineal.l logic.h
+	flex sat_lineal.l
 
 lex.yy.o: lex.yy.c
 	$(CC) $(CFLAGS) -c lex.yy.c

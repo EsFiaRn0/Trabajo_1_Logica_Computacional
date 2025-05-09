@@ -71,44 +71,6 @@ Node* create_not(Node* child) {
     return node;
 }
 
-/**
- * Elimina las implicaciones (→) del árbol, reemplazándolas por una disyunción.
- *
- * Entrada:
- *   node - Árbol de nodos con posibles implicaciones
- *
- * Salida:
- *   Árbol equivalente sin implicaciones (A → B se transforma en ~A ∨ B)
- */
-Node* impl_free(Node* node) {
-    if (!node) return NULL;
-
-    if (node->type == IMPL) {
-        Node* left = impl_free(node->left);
-        Node* right = impl_free(node->right);
-        Node* neg_left = create_not(left);
-        return create_op(OR, neg_left, right);
-    } else if (node->type == AND || node->type == OR) {
-        Node* left = impl_free(node->left);
-        Node* right = impl_free(node->right);
-        return create_op(node->type, left, right);
-    } else if (node->type == NOT) {
-        Node* child = impl_free(node->left);
-        return create_not(child);
-    } else {
-        return create_var(node->var_name);
-    }
-}
-
-/**
- * Elimina las implicaciones (→) del árbol, reemplazándolas por una disyunción.
- *
- * Entrada:
- *   node - Árbol de nodos con posibles implicaciones
- *
- * Salida:
- *   Árbol equivalente sin implicaciones (A → B se transforma en ~A ∨ B)
- */
 Node* copy_tree(Node* node) {
     if (!node) return NULL;
 
@@ -125,67 +87,7 @@ Node* copy_tree(Node* node) {
 }
 
 /**
- * Aplica la ley distributiva para transformar una disyunción de conjunciones en CNF.
- *
- * Entradas:
- *   a, b - Subárboles OR que podrían contener AND
- *
- * Salida:
- *   Árbol reestructurado aplicando distribución
- */
-Node* distribute(Node* a, Node* b) {
-    if (!a || !b) return NULL;
-
-    if (a->type == AND) {
-        return create_op(AND,
-            distribute(a->left, copy_tree(b)),
-            distribute(a->right, copy_tree(b)));
-    } else if (b->type == AND) {
-        return create_op(AND,
-            distribute(copy_tree(a), b->left),
-            distribute(copy_tree(a), b->right));
-    } else {
-        return create_op(OR, copy_tree(a), copy_tree(b));
-    }
-}
-
-/**
- * Convierte un árbol lógico a su Forma Normal Conjuntiva (CNF).
- *
- * Entrada:
- *   node - Árbol lógico (sin implicaciones)
- *
- * Salida:
- *   Árbol convertido a CNF
- */
-Node* to_cnf(Node* node) {
-    if (!node) return NULL;
-
-    switch (node->type) {
-        case OR: {
-            Node* left = to_cnf(node->left);
-            Node* right = to_cnf(node->right);
-            return distribute(left, right);
-        }
-        case AND: {
-            return create_op(AND,
-                to_cnf(node->left),
-                to_cnf(node->right));
-        }
-        case NOT: {
-            return create_not(to_cnf(node->left));
-        }
-        case VAR: {
-            return create_var(node->var_name);
-        }
-        default:
-            return NULL;
-    }
-}
-
-
-/**
- * Imprime una fórmula lógica en notación legible (infija).
+ * Imprime una fórmula lógica.
  *
  * Entrada:
  *   node - Árbol sintáctico de la fórmula
@@ -345,7 +247,7 @@ bool solve_rec(Node* node, bool assignment[26], int idx, int max_vars) {
  * Determina si una fórmula en CNF es satisfacible utilizando backtracking.
  *
  * Entrada:
- *   formula   - Árbol de nodos en forma normal conjuntiva (CNF)
+ *   formula   - Árbol de nodos
  *   num_vars  - Número total de variables proposicionales
  *
  * Salida:

@@ -58,6 +58,7 @@ void reset_stack() {
 "\\rightarrow"        {
                         if (top < 2) {
                           fprintf(stderr, "Error: operador '\\rightarrow' requiere dos operandos\n");
+                          printf("NO-SOLUTION\n");
                           exit(1);
                         }
                         Node* right = pop();
@@ -82,6 +83,7 @@ void reset_stack() {
 "\\vee"               {
                         if (top < 2) {
                             fprintf(stderr, "Error: operador '\\vee' requiere dos operandos\n");
+                            printf("NO-SOLUTION\n");
                             exit(1);
                         }
                         Node* right = pop();
@@ -97,6 +99,10 @@ void reset_stack() {
                         push(create_var(yytext));
                      }
 
-.                    { printf("Caracter no reconocido: %s\n", yytext); }
+.                    {     
+                     fprintf(stderr, "Caracter no reconocido: %s\n", yytext);
+                     printf("NO-SOLUTION\n");
+                     exit(1);
+                     }
 
 %%
