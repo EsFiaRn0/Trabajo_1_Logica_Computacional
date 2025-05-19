@@ -15,11 +15,11 @@
 \usepackage{array}
 \usepackage{geometry}
 \usepackage{longtable}
+\usepackage{listings}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{tikz}
 \usepackage[linesnumbered]{algorithm2e}
-
 
 \renewcommand*\thesection{\arabic{section}}
 
@@ -27,6 +27,33 @@
 \newcommand{\floor}[1]{\left\lfloor #1 \right\rfloor}
 
 \hyphenation{ins-truc-ciones}
+
+\lstdefinelanguage{Lex}{
+	morekeywords={%%
+		%{, %%, %%
+			BEGIN, BEGIN, yytext, yylval, yywrap,
+			printf, return, int, char, void
+		},
+		sensitive=true,
+		morecomment=[l]{//},
+		morecomment=[s]{/*}{*/},
+		morestring=[b]",
+	}
+	
+	\lstset{
+		basicstyle=\ttfamily\small,
+		keywordstyle=\color{blue}\bfseries,
+		commentstyle=\color{gray},
+		stringstyle=\color{red},
+		numbers=left,
+		numberstyle=\tiny,
+		stepnumber=1,
+		numbersep=5pt,
+		tabsize=4,
+		frame=single,
+		breaklines=true,
+		showstringspaces=false
+	}
 
 \begin{document}
 	\RestyleAlgo{ruled}
@@ -93,7 +120,7 @@
 	\end{align*}
 	El siguiente paso es transformar la f\'ormula codificada a su notaci\'on postfix, para esto hay que descomponer la f\'ormula en \textit{tokens} de la siguiente manera:
 	\[ [\neg, (, p, \wedge, \neg, q, ), \wedge, \neg, (, \neg, \neg, r, \wedge, \neg, p, )] \]
-	Para transformas a su notaci\'on postfix se tiene que saber que se eval\'uan los operadores seg\'un la precedencia, en donde la negaci\'on tiene la mayor precedencia por lo que se eval\'ua primero y desp\'ues la conjunci\'on.
+	Para transformar a su notaci\'on postfix se tiene que saber que se eval\'uan los operadores seg\'un la precedencia, en donde la negaci\'on tiene la mayor precedencia por lo que se eval\'ua primero luego de esta, la conjunci\'on.
 	\begin{center}
 		\begin{longtable}{|c|l|l|l|}
 			\hline
@@ -213,12 +240,577 @@
 		}
 		\KwRet{} \texttt{output}
 	\end{algorithm}
-	
-
+	\newpage
 	\section{Implementaci\'on}
+	\subsection{Codificaci\'on de f\'ormula}
+	Implementaci\'on de la codificaci\'on de f\'ormula en Lex
+	\begin{lstlisting}[language=Lex]
+	%{
+		#include <stdio.h>
+		#include <stdlib.h>
+		#include <string.h>
+		#include "logic.h"
+		
+		#define MAX_STACK 1024
+		Node* stack[MAX_STACK];
+		int top = 0;
+		
+		void push(Node* n){
+			if (top < MAX_STACK){
+				stack[top++] = n;
+			}else{
+				fprintf(stderr, "Stack overflow\n");
+				exit(1);
+			}
+		}
+		
+		Node* pop() {
+			if (top > 0) {
+				return stack[--top];
+			} else {
+				fprintf(stderr, "Stack underflow\n");
+				exit(1);
+			}
+		}
+		
+		void reset_stack() {
+			top = 0;
+		}
+		%}
 	
+	%option noyywrap
+	
+	%%
+	
+	[ \t\n]+             ;
+	"("                  ; 
+	"\$"                 ;
+	")"                  ;
+	
+	"\\rightarrow"        {
+		if (top < 2) {
+			fprintf(stderr, "Error: operador '\\rightarrow' requiere dos operandos\n");
+			exit(1);
+		}
+		Node* right = pop();
+		Node* left = pop();
+		Node* neg_right = create_not(right);
+		Node* and_node = create_op(AND, left, neg_right);
+		Node* impl_node = create_not(and_node);
+		push(impl_node);
+	}
+	
+	"\\neg"               {
+		Node* child = pop();
+		push(create_not(child));
+	}
+	
+	"\\wedge"             {
+		Node* right = pop();
+		Node* left = pop();
+		push(create_op(AND, left, right));
+	}
+	
+	"\\vee"               {
+		if (top < 2) {
+			fprintf(stderr, "Error: operador '\\vee' requiere dos operandos\n");
+			exit(1);
+		}
+		Node* right = pop();
+		Node* left = pop();
+		Node* neg_left = create_not(left);
+		Node* neg_right = create_not(right);
+		Node* and_node = create_op(AND, neg_left, neg_right);
+		Node* or_node = create_not(and_node);
+		push(or_node);
+	}
+	
+	[a-zA-Z][a-zA-Z0-9]*(_[0-9]+|_\{[0-9]+\})?  {
+		push(create_var(yytext));
+	}
+	
+	.                    { printf("Caracter no reconocido: %s\n", yytext); }
+	
+	%%
+	\end{lstlisting}
+	\newpage
+	\subsection{Notaci\'on Postfix}
+	Implementaci\'on de la conversi\'on a notaci\'on postfix en C
+	\begin{lstlisting}[language=C]
+	#include <stdio.h>
+	#include <stdlib.h>
+	#include <string.h>
+	#include <ctype.h>
+	#include "postfix_converter.h"
+	
+	#define MAX_STACK 100
+	#define MAX_OUTPUT 2048
+	
+	Operator operators[] = {
+		{"\\neg", 3, 1},
+		{"\\wedge", 2, 0},
+		{"\\vee", 1, 0},
+		{"\\rightarrow", 0, 0},
+		{NULL, 0, 0}
+	};
+	
+	int precedence(const char* op) {
+		for (int i = 0; operators[i].symbol; i++) {
+			if (strcmp(op, operators[i].symbol) == 0)
+			return operators[i].precedence;
+		}
+		return -1;
+	}
+	
+	int is_right_associative(const char* op) {
+		for (int i = 0; operators[i].symbol; i++) {
+			if (strcmp(op, operators[i].symbol) == 0)
+			return operators[i].right_associative;
+		}
+		return 0;
+	}
+	
+	int is_operator(const char* token) {
+		for (int i = 0; operators[i].symbol; i++) {
+			if (strcmp(token, operators[i].symbol) == 0)
+			return 1;
+		}
+		return 0;
+	}
+	
+	char* convert_to_postfix(const char* input) {
+		char output[MAX_OUTPUT] = "";
+		const char* stack[MAX_STACK];
+		int top = 0;
+		
+		char token[256];
+		
+		for (int i = 0; input[i];) {
+			if (isspace(input[i]) || input[i] == '$') {
+				i++;
+				continue;
+			} else if (input[i] == '(' || input[i] == ')') {
+				token[0] = input[i];
+				token[1] = '\0';
+				i++;
+			} else if (input[i] == '\\') {
+				int j = 0;
+				token[j++] = input[i++];
+				while (isalpha(input[i])) token[j++] = input[i++];
+				token[j] = '\0';
+			} else if (isalpha(input[i])) {
+				int j = 0;
+				token[j++] = input[i++];
+				while (isalnum(input[i])) token[j++] = input[i++];
+				if (input[i] == '_') {
+					token[j++] = input[i++];
+					if (input[i] == '{') {
+							token[j++] = input[i++];
+							while (isdigit(input[i])) token[j++] = input[i++];
+							if (input[i] == '}') token[j++] = input[i++];
+					} else {
+						while (isdigit(input[i])) token[j++] = input[i++];
+					}
+				}
+				token[j] = '\0';
+			} else {
+				token[0] = input[i++];
+				token[1] = '\0';
+			}
+			
+			if (is_operator(token)) {
+				while (top > 0 && is_operator(stack[top - 1]) &&
+				((precedence(stack[top - 1]) > precedence(token)) ||
+				(precedence(stack[top - 1]) == precedence(token) && !is_right_associative(token)))) {
+					strcat(output, stack[--top]);
+					strcat(output, " ");
+				}
+				stack[top++] = strdup(token);
+			} else if (strcmp(token, "(") == 0) {
+				stack[top++] = strdup(token);
+			} else if (strcmp(token, ")") == 0) {
+				while (top > 0 && strcmp(stack[top - 1], "(") != 0) {
+					strcat(output, stack[--top]);
+					strcat(output, " ");
+				}
+				if (top == 0) {
+					fprintf(stderr, "Error: parentesis desbalanceados\n");
+					exit(1);
+				}
+				free((void*)stack[--top]);
+			} else {
+				strcat(output, token);
+				strcat(output, " ");
+			}
+		}
+		
+		while (top > 0) {
+			if (strcmp(stack[top - 1], "(") == 0) {
+				fprintf(stderr, "Error: parentesis desbalanceados\n");
+				exit(1);
+			}
+			strcat(output, stack[--top]);
+			strcat(output, " ");
+		}
+		
+		return strdup(output);
+	}
+	\end{lstlisting}
+	\newpage
+	\subsection{Creaci\'on de arbol sint\'actico}
+	\begin{lstlisting}[language=C]
+	#include <stdio.h>
+	#include <stdlib.h>
+	#include <string.h>
+	#include "logic.h"
+
+	Node* create_var(const char* name) {
+		Node* node = (Node*)malloc(sizeof(Node));
+		if (!node) {
+			fprintf(stderr, "Error al asignar memoria para un nodo VAR\n");
+			exit(1);
+		}
+		node->type = VAR;
+		node->var_name = strdup(name);
+		node->left = node->right = NULL;
+		return node;
+	}
+
+	Node* create_op(NodeType type, Node* left, Node* right) {
+		Node* node = (Node*) malloc(sizeof(Node));
+		if (!node) {
+			fprintf(stderr, "Error al asignar memoria para un nodo de operacion\n");
+			exit(1);
+		}
+		node->type = type;
+		node->left = left;
+		node->right = right;
+		node->var_name = NULL;
+		return node;
+	}
+
+	Node* create_not(Node* child) {
+		Node* node = (Node*) malloc(sizeof(Node));
+		if (!node) {
+			fprintf(stderr, "Error al asignar memoria para un nodo NOT\n");
+			exit(1);
+		}
+		node->type = NOT;
+		node->left = child;
+		node->right = NULL;
+		node->var_name = NULL;
+		return node;
+	}
+
+	Node* impl_free(Node* node) {
+		if (!node) return NULL;
+		
+		if (node->type == IMPL) {
+			Node* left = impl_free(node->left);
+			Node* right = impl_free(node->right);
+			Node* neg_left = create_not(left);
+			return create_op(OR, neg_left, right);
+		} else if (node->type == AND || node->type == OR) {
+			Node* left = impl_free(node->left);
+			Node* right = impl_free(node->right);
+			return create_op(node->type, left, right);
+		} else if (node->type == NOT) {
+			Node* child = impl_free(node->left);
+			return create_not(child);
+		} else {
+			return create_var(node->var_name);
+		}
+	}
+
+	Node* copy_tree(Node* node) {
+		if (!node) return NULL;
+		
+		Node* new_node = (Node*)malloc(sizeof(Node));
+		if (!new_node) {
+			fprintf(stderr, "Error al asignar memoria en copy_tree\n");
+			exit(1);
+		}
+		new_node->type = node->type;
+		new_node->var_name = node->var_name ? strdup(node->var_name) : NULL;
+		new_node->left = copy_tree(node->left);
+		new_node->right = copy_tree(node->right);
+		return new_node;
+	}
+
+	Node* distribute(Node* a, Node* b) {
+		if (!a || !b) return NULL;
+		
+		if (a->type == AND) {
+			return create_op(AND,
+			distribute(a->left, copy_tree(b)),
+			distribute(a->right, copy_tree(b)));
+		} else if (b->type == AND) {
+			return create_op(AND,
+			distribute(copy_tree(a), b->left),
+			distribute(copy_tree(a), b->right));
+		} else {
+			return create_op(OR, copy_tree(a), copy_tree(b));
+		}
+	}
+
+	Node* to_cnf(Node* node) {
+		if (!node) return NULL;
+		
+		switch (node->type) {
+			case OR: {
+				Node* left = to_cnf(node->left);
+				Node* right = to_cnf(node->right);
+				return distribute(left, right);
+			}
+			case AND: {
+				return create_op(AND,
+				to_cnf(node->left),
+				to_cnf(node->right));
+			}
+			case NOT: {
+				return create_not(to_cnf(node->left));
+			}
+			case VAR: {
+				return create_var(node->var_name);
+			}
+			default:
+			return NULL;
+		}
+	}
+
+	void print_formula(Node* node) {
+		if (!node) return;
+		
+		switch (node->type) {
+			case VAR:
+			printf("%s", node->var_name);
+			break;
+			case NOT:
+			printf("~");
+			print_formula(node->left);
+			break;
+			case AND:
+			printf("(");
+			print_formula(node->left);
+			printf(" & ");
+			print_formula(node->right);
+			printf(")");
+			break;
+			case OR:
+			printf("(");
+			print_formula(node->left);
+			printf(" | ");
+			print_formula(node->right);
+			printf(")");
+			break;
+			case IMPL:
+			printf("(");
+			print_formula(node->left);
+			printf(" -> ");
+			print_formula(node->right);
+			printf(")");
+			break;
+		}
+	}
+	
+	void free_tree(Node* node) {
+		if (!node) return;
+		
+		if (node->left) free_tree(node->left);
+		if (node->right) free_tree(node->right);
+		
+		if (node->var_name) {
+			free(node->var_name);
+			node->var_name = NULL; 
+		}
+		
+		free(node);
+		node = NULL;
+	}
+
+	static void mark_vars(Node* node, bool vars[26]) {
+		if (!node) return;
+		
+		if (node->type == VAR && node->var_name) {
+			char c = node->var_name[0];
+			if (c >= 'A' && c <= 'Z')
+			vars[c - 'A'] = true;
+		}
+		
+		mark_vars(node->left, vars);
+		mark_vars(node->right, vars);
+	}
+
+	int get_num_vars(Node* node) {
+		bool vars[26] = {false};
+		
+		mark_vars(node, vars);
+		
+		int count = 0;
+		for (int i = 0; i < 26; i++)
+		if (vars[i]) count++;
+		
+		return count;
+	}
+
+	bool eval_formula(Node* node, bool assignment[26]) {
+		if (!node) return false;
+		
+		switch (node->type) {
+			case VAR:
+			return assignment[node->var_name[0] - 'A'];
+			case NOT:
+			return !eval_formula(node->left, assignment);
+			case AND:
+			return eval_formula(node->left, assignment) &&
+			eval_formula(node->right, assignment);
+			case OR:
+			return eval_formula(node->left, assignment) ||
+			eval_formula(node->right, assignment);
+			default:
+			return false;
+		}
+	}
+
+	bool solve_rec(Node* node, bool assignment[26], int idx, int max_vars) {
+		if (idx == max_vars)
+		return eval_formula(node, assignment);
+		
+		assignment[idx] = false;
+		if (solve_rec(node, assignment, idx + 1, max_vars)) return true;
+		
+		assignment[idx] = true;
+		if (solve_rec(node, assignment, idx + 1, max_vars)) return true;
+		
+		return false;
+	}
+
+	bool solve_sat(Node* formula, int num_vars) {
+		bool assignment[26] = {false};
+		return solve_rec(formula, assignment, 0, num_vars);
+	}
+	
+	\end{lstlisting}
+	\newpage
+	\subsection{Verificaci\'on de satisfacibilidad}
+	\begin{lstlisting}[language=C]
+	#include "logic.h"
+	#include <stdio.h>
+	#include <stdlib.h>
+	#include <stdbool.h>
+	
+	bool is_satisfied(Node* clause, bool* assignment, int num_vars);
+	bool backtrack(Node* formula, bool* assignment, int num_vars, int index);
+
+	bool is_satisfied(Node* clause, bool* assignment, int num_vars){
+		
+		if (!clause) return false;
+		
+		if (clause->type == VAR){
+			int var_index = atoi(clause->var_name);
+			return assignment[var_index];
+		} 
+		else if (clause->type == NOT){
+			return !assignment[atoi(clause->left->var_name)];
+		}
+		return false;
+	}
+	
+	bool backtrack(Node* formula, bool* assignment, int num_vars, int index){
+		if (index == num_vars){
+			Node* current_clause = formula;
+			while (current_clause){
+				if (!is_satisfied(current_clause, assignment, num_vars)){
+					return false;
+				}
+				current_clause = current_clause->right;
+			}
+			return true;
+		}
+		
+		assignment[index] = true;
+		if (backtrack(formula, assignment, num_vars, index + 1)) {
+			return true;
+		}
+		
+		assignment[index] = false;
+		if (backtrack(formula, assignment, num_vars, index + 1)) {
+			return true;
+		}
+		
+		return false;
+	}
+
+	bool solve_sat(Node* formula, int num_vars){
+		bool* assignment = malloc(num_vars * sizeof(bool));
+		if (!assignment) {
+			fprintf(stderr, "Error al asignar memoria.\n");
+			return false;
+		}
+		
+		for (int i = 0; i < num_vars; i++){
+			assignment[i] = false;
+		}
+		
+		bool result = backtrack(formula, assignment, num_vars, 0);
+		
+		free(assignment);
+		return result;
+	}
+	\end{lstlisting}
+	\newpage
+	\section{Compilaci\'on}
+	Antes es necesario saber que para la implementaci\'on de SAT Lineal se usaron dos distribuciones distintas de Linux, Arch Linux y Fedora Linux 42 (Workstation Edition). \\
+	Para la compilaci\'on es necesario los siguientes requisitos:
+	\subsection{Requisitos}
+	\begin{itemize}
+		\item \textbf{gcc} - Compilador de C 
+		\begin{enumerate}
+			\item Arch Linux: \texttt{sudo pacman -S gcc}
+			\item Fedora: \texttt{sudo dnf install gcc}
+		\end{enumerate}
+		\item \textbf{flex} - Generador de analizadores l\'exicos
+		\begin{enumerate}
+			\item Arch Linux: \texttt{sudo pacman -S flex}
+			\item Fedora: \texttt{sudo dnf install flex}
+		\end{enumerate}
+		\item \textbf{make} (Opcional) - Para automatizar la compilaci\'on
+		\begin{enumerate}
+			\item Arch Linux: \texttt{sudo pacman -S make}
+			\item Fedora: \texttt{sudo dnf install make}
+		\end{enumerate}
+	\end{itemize}
+	\subsection{Compilaci\'on}
+	Hay dos m\'etodos para compilar el programa:
+	\begin{enumerate}
+		\item Opci\'on 1: Usando make \\\\\texttt{make} \\\\
+		Esto genera el ejecutable llamado \texttt{tarea1.exe}
+		\item Opci\'on 2: Manualmente (sin make) \\\\
+		\texttt{flex sat\_cnf.l} \\\\
+		\texttt{gcc -Wall -g -c sat\_main.c logic.c postfix\_converter.c sat\_solver.c lex.yy.c} \\\\
+		\texttt{gcc -Wall -g -o tarea1.exe sat\_main.o logic.o postfix\_converter.o lex.yy.o -lfl} \\\\
+		Esto genera el ejecutable llamado \texttt{tarea1.exe}
+	\end{enumerate}
+	\subsection{Ejecuci\'on}
+	Se tendr\'a que preparar un archivo llamado "expresion.txt" con una o m\'as f\'ormulas l\'ogicas escritas en \LaTeX, encerradas con "\$" y con salto de linea entre cada una, por ejemplo: \\\\
+	\texttt{expresion.txt} \\
+	\fbox{\parbox{0.6\linewidth}{
+			\$p \textbackslash wedge q\$ \\
+			\$p \textbackslash vee \textbackslash neg q\$ \\
+			\$p \textbackslash wedge \textbackslash neg r \textbackslash rightarrow q\$
+	}} \\\\
+	Este formato de archivo es v\'alido para el programa. \\\\
+	Luego de tener el archivo preparado se le env\'ia como entrada estandar (stdin) de esta manera: \\\\
+	\texttt{./tarea1.exe < expresion.txt}
+	\subsection{Limpieza}
+	Finalmente para limpiar los archivos compilador y ejecutable:
+	\begin{enumerate}
+		\item Opci\'on 1: Usando make \\\\\texttt{make clean}
+		\item Opci\'on 2: Manualmente (sin make) \\\\
+		\texttt{rm -f *.o lex.yy.c tarea1.exe}
+	\end{enumerate}
 	\section{Conclusiones}
-	
+	Hemos presentado la implementaci\'on de un algoritmo que determina si las variables de una f\'ormula booleana pueden ser reemplazadas con \text{T}	o \textbf{F} de modo que la f\'ormula entregue resultado \textbf{T}, es decir si es satisfacible o no. La tarea fundamental es codificar una f\'ormula de l\'ogica proposicional escrita en \LaTeX de tal forma que los \'unicos operadores que se eval\'uen sean la negaci\'on y conjunci\'on lo cual facilita la asignaci\'on de valores de verdadero o falso usando un \'arbol sint\'actico.
 \end{document}
 
 
