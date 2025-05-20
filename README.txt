@@ -1,75 +1,84 @@
-# Tarea 1 - Lógica Proposicional
-## Estructura de Directorios:
--------------------------
-- `codigos/`:
-    -expresion.txt
-    -expresion1.txt:
-    -expresion2.txt:
-    -logic.c:
-    -logic.h:
-    -Makefile:
-    -postfix_converter.c:
-    -postfix_converter.h:
-    -sat_lineal.l
-    -sat_main.c
-    -sat_solver.c
-- `Informe/`:
-    - `Imagenes/`:
-    - `Informe Tex/`:
+TAREA 1 - LÓGICA PROPOSICIONAL
 
-## Requisitos:
--------------------------
+Este proyecto implementa un verificador de satisfacibilidad para expresiones proposicionales. Utiliza C y Flex para procesar fórmulas lógicas ingresadas desde un archivo.
 
-- `gcc` – Compilador de C
-- `flex` – Generador de analizadores léxicos
-- (Opcional) `make` – Para automatizar la compilación
+===========================================
+ESTRUCTURA DE DIRECTORIOS
+===========================================
 
----
-## Compilación
--------------------------
+Tarea1/
+├── codigos/
+│   ├── expresion.txt
+│   ├── expresion1.txt
+│   ├── expresion2.txt
+│   ├── logic.c
+│   ├── logic.h
+│   ├── Makefile
+│   ├── postfix_converter.c
+│   ├── postfix_converter.h
+│   ├── sat_cnf.l
+│   ├── sat_main.c
+│   ├── sat_solver.c
+├── Informe/
+│   ├── Imagenes/
+│   ├── Informe Tex/
 
-### Opción 1: Usando make
+===========================================
+REQUISITOS
+===========================================
 
-```bash
-make
+- gcc       -> Compilador de C
+- flex      -> Generador de analizadores léxicos
+- make      -> (opcional) Para automatizar la compilación
 
-Esto generará el ejecutable llamado tarea1.exe.
+===========================================
+COMPILACIÓN
+===========================================
 
-### Opción 2: Manualmente, sin make
+Opción 1: Usando make
 
-```bash
-flex sat_cnf.l
+    make
 
-gcc -Wall -g -c sat_main.c logic.c postfix_converter.c sat_solver.c lex.yy.c
+Esto generará el ejecutable llamado `tarea1.exe`.
 
-gcc -Wall -g -o tarea1.exe sat_main.o logic.o postfix_converter.o lex.yy.o -lfl
+-------------------------------------------
 
+Opción 2: Manualmente (sin make)
 
-Esto generará el ejecutable llamado tarea1.exe.
+    flex sat_cnf.l
 
-## Ejecución
--------------------------
+    gcc -Wall -g -c sat_main.c logic.c postfix_converter.c sat_solver.c lex.yy.c
 
-Se tendra que preparar un archivo llamado expresion.txt con una fórmula lógica, por ejemplo:
+    gcc -Wall -g -o tarea1.exe sat_main.o logic.o postfix_converter.o sat_solver.o lex.yy.o -lfl
 
-```bash
-$p \wedge \neg p$
+Esto generará el ejecutable llamado `tarea1.exe`.
 
-Se tendra el programa pasando ese archivo como entrada estándar:
+===========================================
+EJECUCIÓN
+===========================================
 
-```bash
-./tarea1.exe < expresion.txt
+Se debe preparar un archivo de entrada, por ejemplo `expresion.txt`, que contenga una fórmula lógica, como:
 
-##  Limpieza
--------------------------
+    $p ∧ ¬p$
 
-Para eliminar los archivos compilados y el ejecutable:
+Luego se ejecuta el programa leyendo dicho archivo desde la entrada estándar:
 
-```bash
-make clean
+    ./tarea1.exe < expresion.txt
 
-o
+===========================================
+LIMPIEZA
+===========================================
 
-```bash
-rm -f *.o lex.yy.c tarea1.exe
----
+Para eliminar los archivos generados durante la compilación, se puede ejecutar:
+
+    make clean
+
+O manualmente:
+
+    rm -f *.o lex.yy.c tarea1.exe
+
+===========================================
+Desarrolladores
+===========================================
+Miguel Olivares Morales & Benjamín Riveros Landeros.
+miguel.olivares@usach.cl & benjamin.riveros.l@usach.cl
