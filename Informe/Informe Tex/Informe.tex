@@ -173,6 +173,8 @@
 	\newpage
 	\section{Algoritmo}
 	\subsection{Codificación de fórmula}
+	Para simplificar el procesamiento, transformamos la fórmula booleana en una forma equivalente que usa solo negación y conjunción, eliminando implicaciones y disyunciones mediante equivalencias lógicas.
+	A continuación se muestra algoritmo recursivo $T(\phi)$ aplicando estas reglas:
 	\begin{algorithm}
 		\caption{Algoritmo recursivo $T(\phi)$ para codificar una fórmula booleana $\phi$}
 		\KwIn{$\phi$}
@@ -243,233 +245,122 @@
 	\newpage
 	\section{Implementaci\'on}
 	\subsection{Codificaci\'on de f\'ormula}
-	Implementaci\'on de la codificaci\'on de f\'ormula en Lex
-	\begin{lstlisting}[language=Lex]
-	%{
-		#include <stdio.h>
-		#include <stdlib.h>
-		#include <string.h>
-		#include "logic.h"
-		
-		#define MAX_STACK 1024
-		Node* stack[MAX_STACK];
-		int top = 0;
-		
-		void push(Node* n){
-			if (top < MAX_STACK){
-				stack[top++] = n;
-			}else{
-				fprintf(stderr, "Stack overflow\n");
-				exit(1);
-			}
-		}
-		
-		Node* pop() {
-			if (top > 0) {
-				return stack[--top];
-			} else {
-				fprintf(stderr, "Stack underflow\n");
-				exit(1);
-			}
-		}
-		
-		void reset_stack() {
-			top = 0;
-		}
-		%}
-	
-	%option noyywrap
-	
-	%%
-	
-	[ \t\n]+             ;
-	"("                  ; 
-	"\$"                 ;
-	")"                  ;
-	
-	"\\rightarrow"        {
-		if (top < 2) {
-			fprintf(stderr, "Error: operador '\\rightarrow' requiere dos operandos\n");
-			exit(1);
-		}
+
+	La construcci\'on del \'arbol sint\'actico a partir de la f\'ormula en notaci\'on postfija se basa en el uso de una pila y las operaciones fundamentales \texttt{push} y \texttt{pop} para manejar los nodos.
+
+	\begin{itemize}
+		\item Las \textbf{variables} se convierten en nodos hoja y se insertan en la pila.
+		\item Los \textbf{operadores unarios} como $\neg$ toman un operando de la pila y crean un nodo unario.
+		\item Los \textbf{operadores binarios} como $\wedge$, $\vee$ e $\rightarrow$ extraen dos operandos de la pila, crean un nuevo nodo con la operaci\'on correspondiente y lo reinsertan.
+		\item Las \textbf{transformaciones l\'ogicas} se aplican para eliminar operadores como $\rightarrow$ y $\vee$ mediante equivalencias:
+		\begin{itemize}
+			\item $A \rightarrow B \equiv \neg (A \wedge \neg B)$
+			\item $A \vee B \equiv \neg (\neg A \wedge \neg B)$
+		\end{itemize}
+	\end{itemize}
+
+	El siguiente fragmento ejemplifica el manejo de operadores y la manipulaci\'on de la pila para construir el \'arbol:
+
+	\begin{lstlisting}[language=Lex, caption={Manejo de pila y reescritura lógica durante la construcción del árbol}]
+	"\\rightarrow" {
 		Node* right = pop();
 		Node* left = pop();
 		Node* neg_right = create_not(right);
 		Node* and_node = create_op(AND, left, neg_right);
-		Node* impl_node = create_not(and_node);
-		push(impl_node);
+		push(create_not(and_node));
 	}
-	
-	"\\neg"               {
+
+	"\\neg" {
 		Node* child = pop();
 		push(create_not(child));
 	}
-	
-	"\\wedge"             {
+
+	"\\wedge" {
 		Node* right = pop();
 		Node* left = pop();
 		push(create_op(AND, left, right));
 	}
-	
-	"\\vee"               {
-		if (top < 2) {
-			fprintf(stderr, "Error: operador '\\vee' requiere dos operandos\n");
-			exit(1);
-		}
+
+	"\\vee" {
 		Node* right = pop();
 		Node* left = pop();
 		Node* neg_left = create_not(left);
 		Node* neg_right = create_not(right);
 		Node* and_node = create_op(AND, neg_left, neg_right);
-		Node* or_node = create_not(and_node);
-		push(or_node);
+		push(create_not(and_node));
 	}
-	
-	[a-zA-Z][a-zA-Z0-9]*(_[0-9]+|_\{[0-9]+\})?  {
-		push(create_var(yytext));
-	}
-	
-	.                    { printf("Caracter no reconocido: %s\n", yytext); }
-	
-	%%
 	\end{lstlisting}
+
 	\newpage
 	\subsection{Notaci\'on Postfix}
-	Implementaci\'on de la conversi\'on a notaci\'on postfix en C
-	\begin{lstlisting}[language=C]
-	#include <stdio.h>
-	#include <stdlib.h>
-	#include <string.h>
-	#include <ctype.h>
-	#include "postfix_converter.h"
-	
-	#define MAX_STACK 100
-	#define MAX_OUTPUT 2048
-	
+
+	Esta transformación simplifica el análisis posterior de la fórmula.
+
+	El código en C:
+	\begin{itemize}
+		\item Define operadores lógicos con su precedencia y asociatividad.
+		\item Procesa la entrada carácter por carácter, reconociendo paréntesis, operadores y variables.
+		\item Aplica el algoritmo de Shunting Yard usando una pila.
+		\item Genera la expresión postfija y detecta errores de paréntesis.
+	\end{itemize}
+
+	Este módulo permite transformar expresiones como \verb|$((p \rightarrow q) \wedge (\neg r \vee p))$| en \verb|p q \rightarrow r \neg p \vee \wedge|.
+
+	A continuación, se muestra el fragmento más importante del código:
+
+
+	\begin{lstlisting}[language=C, caption={Fragmento clave de la conversión a notación postfija}]
 	Operator operators[] = {
-		{"\\neg", 3, 1},
-		{"\\wedge", 2, 0},
-		{"\\vee", 1, 0},
-		{"\\rightarrow", 0, 0},
+		{"\\neg", 3, 1},       // Mayor precedencia, asociativo a la derecha
+		{"\\wedge", 2, 0},     // Conjuncion
+		{"\\vee", 1, 0},       // Disyuncion
+		{"\\rightarrow", 0, 0},// Implicacion
 		{NULL, 0, 0}
 	};
-	
-	int precedence(const char* op) {
-		for (int i = 0; operators[i].symbol; i++) {
-			if (strcmp(op, operators[i].symbol) == 0)
-			return operators[i].precedence;
-		}
-		return -1;
-	}
-	
-	int is_right_associative(const char* op) {
-		for (int i = 0; operators[i].symbol; i++) {
-			if (strcmp(op, operators[i].symbol) == 0)
-			return operators[i].right_associative;
-		}
-		return 0;
-	}
-	
-	int is_operator(const char* token) {
-		for (int i = 0; operators[i].symbol; i++) {
-			if (strcmp(token, operators[i].symbol) == 0)
-			return 1;
-		}
-		return 0;
-	}
-	
+
 	char* convert_to_postfix(const char* input) {
 		char output[MAX_OUTPUT] = "";
 		const char* stack[MAX_STACK];
 		int top = 0;
-		
-		char token[256];
-		
-		for (int i = 0; input[i];) {
-			if (isspace(input[i]) || input[i] == '$') {
-				i++;
-				continue;
-			} else if (input[i] == '(' || input[i] == ')') {
-				token[0] = input[i];
-				token[1] = '\0';
-				i++;
-			} else if (input[i] == '\\') {
-				int j = 0;
-				token[j++] = input[i++];
-				while (isalpha(input[i])) token[j++] = input[i++];
-				token[j] = '\0';
-			} else if (isalpha(input[i])) {
-				int j = 0;
-				token[j++] = input[i++];
-				while (isalnum(input[i])) token[j++] = input[i++];
-				if (input[i] == '_') {
-					token[j++] = input[i++];
-					if (input[i] == '{') {
-							token[j++] = input[i++];
-							while (isdigit(input[i])) token[j++] = input[i++];
-							if (input[i] == '}') token[j++] = input[i++];
-					} else {
-						while (isdigit(input[i])) token[j++] = input[i++];
-					}
-				}
-				token[j] = '\0';
-			} else {
-				token[0] = input[i++];
-				token[1] = '\0';
-			}
-			
+
+		// Procesamiento de tokens y aplicacion del algoritmo de Shunting Yard
+		while (...) {
+			// Manejo de operadores
 			if (is_operator(token)) {
 				while (top > 0 && is_operator(stack[top - 1]) &&
-				((precedence(stack[top - 1]) > precedence(token)) ||
-				(precedence(stack[top - 1]) == precedence(token) && !is_right_associative(token)))) {
+					((precedence(stack[top - 1]) > precedence(token)) ||
+					(precedence(stack[top - 1]) == precedence(token) &&
+					!is_right_associative(token)))) {
 					strcat(output, stack[--top]);
 					strcat(output, " ");
 				}
 				stack[top++] = strdup(token);
-			} else if (strcmp(token, "(") == 0) {
-				stack[top++] = strdup(token);
-			} else if (strcmp(token, ")") == 0) {
-				while (top > 0 && strcmp(stack[top - 1], "(") != 0) {
-					strcat(output, stack[--top]);
-					strcat(output, " ");
-				}
-				if (top == 0) {
-					fprintf(stderr, "Error: parentesis desbalanceados\n");
-					exit(1);
-				}
-				free((void*)stack[--top]);
-			} else {
-				strcat(output, token);
-				strcat(output, " ");
 			}
+			// Manejo de parentesis y operandos...
 		}
-		
+
+		// Vaciar la pila al final
 		while (top > 0) {
-			if (strcmp(stack[top - 1], "(") == 0) {
-				fprintf(stderr, "Error: parentesis desbalanceados\n");
-				exit(1);
-			}
 			strcat(output, stack[--top]);
 			strcat(output, " ");
 		}
-		
+
 		return strdup(output);
 	}
 	\end{lstlisting}
-	\newpage
-	\subsection{Creaci\'on de arbol sint\'actico}
-	\begin{lstlisting}[language=C]
-	#include <stdio.h>
-	#include <stdlib.h>
-	#include <string.h>
-	#include "logic.h"
+	\subsection{Construcción del Árbol Sintáctico}
 
+	La representación de una fórmula lógica se realiza mediante estructuras de árbol donde cada nodo representa un operador o una variable.
+
+	\begin{itemize}
+		\item Las \textbf{variables proposicionales} como \texttt{P} o \texttt{Q} se almacenan como nodos hoja.
+		\item Los \textbf{operadores binarios} (\texttt{AND}, \texttt{OR}, \texttt{IMPL}) generan nodos internos con dos hijos.
+		\item El \textbf{operador unario} \texttt{NOT} crea un nodo con un solo hijo.
+	\end{itemize}
+
+	\begin{lstlisting}[language=C, caption={Creación de nodos para el árbol sintáctico}]
 	Node* create_var(const char* name) {
 		Node* node = (Node*)malloc(sizeof(Node));
-		if (!node) {
-			fprintf(stderr, "Error al asignar memoria para un nodo VAR\n");
-			exit(1);
-		}
 		node->type = VAR;
 		node->var_name = strdup(name);
 		node->left = node->right = NULL;
@@ -478,10 +369,6 @@
 
 	Node* create_op(NodeType type, Node* left, Node* right) {
 		Node* node = (Node*) malloc(sizeof(Node));
-		if (!node) {
-			fprintf(stderr, "Error al asignar memoria para un nodo de operacion\n");
-			exit(1);
-		}
 		node->type = type;
 		node->left = left;
 		node->right = right;
@@ -491,45 +378,23 @@
 
 	Node* create_not(Node* child) {
 		Node* node = (Node*) malloc(sizeof(Node));
-		if (!node) {
-			fprintf(stderr, "Error al asignar memoria para un nodo NOT\n");
-			exit(1);
-		}
 		node->type = NOT;
 		node->left = child;
 		node->right = NULL;
 		node->var_name = NULL;
 		return node;
 	}
+	\end{lstlisting}
 
-	Node* impl_free(Node* node) {
-		if (!node) return NULL;
-		
-		if (node->type == IMPL) {
-			Node* left = impl_free(node->left);
-			Node* right = impl_free(node->right);
-			Node* neg_left = create_not(left);
-			return create_op(OR, neg_left, right);
-		} else if (node->type == AND || node->type == OR) {
-			Node* left = impl_free(node->left);
-			Node* right = impl_free(node->right);
-			return create_op(node->type, left, right);
-		} else if (node->type == NOT) {
-			Node* child = impl_free(node->left);
-			return create_not(child);
-		} else {
-			return create_var(node->var_name);
-		}
-	}
+	\subsection{Copia y Liberación de Árboles}
 
+	Se incluyen funciones auxiliares para copiar un árbol lógico o liberar toda su memoria, evitando fugas.
+
+	\begin{lstlisting}[language=C, caption={Copia y liberación de árboles lógicos}]
 	Node* copy_tree(Node* node) {
 		if (!node) return NULL;
-		
+
 		Node* new_node = (Node*)malloc(sizeof(Node));
-		if (!new_node) {
-			fprintf(stderr, "Error al asignar memoria en copy_tree\n");
-			exit(1);
-		}
 		new_node->type = node->type;
 		new_node->var_name = node->var_name ? strdup(node->var_name) : NULL;
 		new_node->left = copy_tree(node->left);
@@ -537,151 +402,87 @@
 		return new_node;
 	}
 
-	Node* distribute(Node* a, Node* b) {
-		if (!a || !b) return NULL;
-		
-		if (a->type == AND) {
-			return create_op(AND,
-			distribute(a->left, copy_tree(b)),
-			distribute(a->right, copy_tree(b)));
-		} else if (b->type == AND) {
-			return create_op(AND,
-			distribute(copy_tree(a), b->left),
-			distribute(copy_tree(a), b->right));
-		} else {
-			return create_op(OR, copy_tree(a), copy_tree(b));
-		}
-	}
-
-	Node* to_cnf(Node* node) {
-		if (!node) return NULL;
-		
-		switch (node->type) {
-			case OR: {
-				Node* left = to_cnf(node->left);
-				Node* right = to_cnf(node->right);
-				return distribute(left, right);
-			}
-			case AND: {
-				return create_op(AND,
-				to_cnf(node->left),
-				to_cnf(node->right));
-			}
-			case NOT: {
-				return create_not(to_cnf(node->left));
-			}
-			case VAR: {
-				return create_var(node->var_name);
-			}
-			default:
-			return NULL;
-		}
-	}
-
-	void print_formula(Node* node) {
-		if (!node) return;
-		
-		switch (node->type) {
-			case VAR:
-			printf("%s", node->var_name);
-			break;
-			case NOT:
-			printf("~");
-			print_formula(node->left);
-			break;
-			case AND:
-			printf("(");
-			print_formula(node->left);
-			printf(" & ");
-			print_formula(node->right);
-			printf(")");
-			break;
-			case OR:
-			printf("(");
-			print_formula(node->left);
-			printf(" | ");
-			print_formula(node->right);
-			printf(")");
-			break;
-			case IMPL:
-			printf("(");
-			print_formula(node->left);
-			printf(" -> ");
-			print_formula(node->right);
-			printf(")");
-			break;
-		}
-	}
-	
 	void free_tree(Node* node) {
 		if (!node) return;
-		
-		if (node->left) free_tree(node->left);
-		if (node->right) free_tree(node->right);
-		
-		if (node->var_name) {
-			free(node->var_name);
-			node->var_name = NULL; 
-		}
-		
-		free(node);
-		node = NULL;
-	}
 
+		free_tree(node->left);
+		free_tree(node->right);
+
+		if (node->var_name) free(node->var_name);
+		free(node);
+	}
+	\end{lstlisting}
+
+	\subsection{Conteo de Variables Proposicionales}
+
+	Esta función identifica cuántas variables únicas (A--Z) aparecen en el árbol lógico. Usa un arreglo booleano como bandera para marcar la presencia de cada letra.
+
+	\begin{lstlisting}[language=C, caption={Conteo de variables proposicionales}]
 	static void mark_vars(Node* node, bool vars[26]) {
 		if (!node) return;
-		
+
 		if (node->type == VAR && node->var_name) {
 			char c = node->var_name[0];
 			if (c >= 'A' && c <= 'Z')
-			vars[c - 'A'] = true;
+				vars[c - 'A'] = true;
 		}
-		
+
 		mark_vars(node->left, vars);
 		mark_vars(node->right, vars);
 	}
 
 	int get_num_vars(Node* node) {
 		bool vars[26] = {false};
-		
 		mark_vars(node, vars);
-		
+
 		int count = 0;
 		for (int i = 0; i < 26; i++)
-		if (vars[i]) count++;
-		
+			if (vars[i]) count++;
+
 		return count;
 	}
+	\end{lstlisting}
 
+	\subsection{Evaluación de Fórmulas Lógicas}
+
+	Se puede evaluar una fórmula con una asignación booleana específica. Las variables se asocian a valores mediante su posición (A=0, B=1, ..., Z=25).
+
+	\begin{lstlisting}[language=C, caption={Evaluación de una fórmula lógica}]
 	bool eval_formula(Node* node, bool assignment[26]) {
 		if (!node) return false;
-		
+
 		switch (node->type) {
 			case VAR:
-			return assignment[node->var_name[0] - 'A'];
+				return assignment[node->var_name[0] - 'A'];
 			case NOT:
-			return !eval_formula(node->left, assignment);
+				return !eval_formula(node->left, assignment);
 			case AND:
-			return eval_formula(node->left, assignment) &&
-			eval_formula(node->right, assignment);
+				return eval_formula(node->left, assignment) &&
+					eval_formula(node->right, assignment);
 			case OR:
-			return eval_formula(node->left, assignment) ||
-			eval_formula(node->right, assignment);
+				return eval_formula(node->left, assignment) ||
+					eval_formula(node->right, assignment);
 			default:
-			return false;
+				return false;
 		}
 	}
+	\end{lstlisting}
 
+	\subsection{Verificación de Satisfacibilidad (SAT)}
+
+	Se utiliza backtracking para verificar si existe alguna combinación de valores de verdad que satisfaga la fórmula lógica.
+
+	\begin{lstlisting}[language=C, caption={Backtracking para resolver SAT}]
 	bool solve_rec(Node* node, bool assignment[26], int idx, int max_vars) {
 		if (idx == max_vars)
-		return eval_formula(node, assignment);
-		
+			return eval_formula(node, assignment);
+
 		assignment[idx] = false;
 		if (solve_rec(node, assignment, idx + 1, max_vars)) return true;
-		
+
 		assignment[idx] = true;
 		if (solve_rec(node, assignment, idx + 1, max_vars)) return true;
-		
+
 		return false;
 	}
 
@@ -689,23 +490,21 @@
 		bool assignment[26] = {false};
 		return solve_rec(formula, assignment, 0, num_vars);
 	}
-	
 	\end{lstlisting}
-	\newpage
-	\subsection{Verificaci\'on de satisfacibilidad}
-	\begin{lstlisting}[language=C]
-	#include "logic.h"
-	#include <stdio.h>
-	#include <stdlib.h>
-	#include <stdbool.h>
-	
-	bool is_satisfied(Node* clause, bool* assignment, int num_vars);
-	bool backtrack(Node* formula, bool* assignment, int num_vars, int index);
 
+	\subsection{Evaluación de Cláusulas bajo una Asignación}
+
+	Para verificar si una cláusula está satisfecha con una asignación específica de valores booleanos a las variables, se utiliza la función \texttt{is\_satisfied}. Esta función analiza un nodo que representa una cláusula (puede ser un literal o su negación) y devuelve \texttt{true} si la cláusula es verdadera con la asignación dada.
+
+	\begin{itemize}
+		\item Si el nodo es una variable, simplemente se consulta su valor en el arreglo de asignación.
+		\item Si el nodo es una negación, se niega el valor asignado a la variable correspondiente.
+	\end{itemize}
+
+	\begin{lstlisting}[language=C, caption={Función para evaluar si una cláusula está satisfecha}]
 	bool is_satisfied(Node* clause, bool* assignment, int num_vars){
-		
 		if (!clause) return false;
-		
+
 		if (clause->type == VAR){
 			int var_index = atoi(clause->var_name);
 			return assignment[var_index];
@@ -715,7 +514,21 @@
 		}
 		return false;
 	}
-	
+	\end{lstlisting}
+
+	\subsection{Algoritmo de Backtracking para SAT}
+
+	El algoritmo de backtracking recorre todas las posibles asignaciones de valores de verdad para las variables, utilizando recursión:
+
+	\begin{itemize}
+		\item Cuando se asignan valores a todas las variables, se verifica si todas las cláusulas de la fórmula están satisfechas.
+		\item Si se encuentra una asignación que satisface todas las cláusulas, se devuelve \texttt{true}.
+		\item Si ninguna asignación es válida, se devuelve \texttt{false}.
+	\end{itemize}
+
+	La función \texttt{solve\_sat} es la interfaz principal que inicializa la asignación y llama a la función recursiva \texttt{backtrack}.
+
+	\begin{lstlisting}[language=C, caption={Backtracking para resolver SAT}]
 	bool backtrack(Node* formula, bool* assignment, int num_vars, int index){
 		if (index == num_vars){
 			Node* current_clause = formula;
@@ -727,17 +540,13 @@
 			}
 			return true;
 		}
-		
+
 		assignment[index] = true;
-		if (backtrack(formula, assignment, num_vars, index + 1)) {
-			return true;
-		}
-		
+		if (backtrack(formula, assignment, num_vars, index + 1)) return true;
+
 		assignment[index] = false;
-		if (backtrack(formula, assignment, num_vars, index + 1)) {
-			return true;
-		}
-		
+		if (backtrack(formula, assignment, num_vars, index + 1)) return true;
+
 		return false;
 	}
 
@@ -747,17 +556,18 @@
 			fprintf(stderr, "Error al asignar memoria.\n");
 			return false;
 		}
-		
+
 		for (int i = 0; i < num_vars; i++){
 			assignment[i] = false;
 		}
-		
+
 		bool result = backtrack(formula, assignment, num_vars, 0);
-		
+
 		free(assignment);
 		return result;
 	}
 	\end{lstlisting}
+
 	\newpage
 	\section{Compilaci\'on}
 	Antes es necesario saber que para la implementaci\'on de SAT Lineal se usaron dos distribuciones distintas de Linux, Arch Linux y Fedora Linux 42 (Workstation Edition). \\
