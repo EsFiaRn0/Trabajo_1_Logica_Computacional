@@ -19,7 +19,9 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{tikz}
+\usepackage{tikz-qtree}
 \usepackage[linesnumbered]{algorithm2e}
+
 
 \renewcommand*\thesection{\arabic{section}}
 
@@ -170,6 +172,55 @@
 			\hline
 		\end{longtable}
 	\end{center}
+	Finalmente al tener el \textit{parse tree} se busca una asignaci\'on de valores que cumpla la satisfacibilidad de la f\'ormula \\
+	\begin{center}
+		\begin{tikzpicture}
+			[
+			level 1/.style={sibling distance=25mm},
+			level 2/.style={sibling distance=15mm},
+			]
+			\node {$\wedge$}
+			child {node {$\neg$}
+				child{node {$\wedge$}
+					child{node {$p$}}
+					child{node {$\neg$}
+						child{node {$q$}}}}
+				}
+			child {
+				node {$\neg$}
+				child{node {$\wedge$}
+				child {node {$\neg$}
+					child {node {$\neg$}
+						child {node {$r$}}}}
+				child {node {$\neg$}
+					child {node {$p$}}}}
+			};
+		\end{tikzpicture} \\
+		Y al aplicar algoritmo backtracking se tendría por ejemplo: \\\vspace*{5mm}
+		\begin{tikzpicture}
+			[
+			level 1/.style={sibling distance=25mm},
+			level 2/.style={sibling distance=15mm},
+			]
+			\node {$T$}
+			child {node {$T$}
+				child{node {$F$}
+					child{node {$F$}}
+					child{node {$T$}
+						child{node {$F$}}}}
+			}
+			child {
+				node {$T$}
+				child{node {$F$}
+					child {node {$F$}
+						child {node {$T$}
+							child {node {$F$}}}}
+					child {node {$T$}
+						child {node {$F$}}}}
+			};
+		\end{tikzpicture}
+	\end{center}
+	
 	\newpage
 	\section{Algoritmo}
 	\subsection{Codificación de fórmula}
