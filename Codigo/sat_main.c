@@ -50,10 +50,9 @@ int main(int argc, char* argv[]) {
                 continue;
             }
 
-            printf("Postfijo: %s\n", postfix);
-
             if (top != 1) {
                 fprintf(stderr, "Error: fórmula mal formada (top = %d)\n", top);
+                printf("NO-SOLUTION\n");
                 fclose(yyin);
                 remove("temp_input.txt");
                 free(postfix);
@@ -61,9 +60,6 @@ int main(int argc, char* argv[]) {
             }
 
             Node* root = stack[0];
-
-            printf("Fórmula transformada según la gramática T:\n");
-            print_formula(root);
 
             int num_vars = get_num_vars(root);
 
