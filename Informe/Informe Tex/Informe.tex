@@ -243,6 +243,52 @@
 		\KwRet{} \texttt{output}
 	\end{algorithm}
 	\newpage
+	\subsection{Backtracking}
+	Para encontrar la satisfacibilidad de la f\'ormula se usa un algoritmo de b\'usqueda que explora un \'arbol de posibles soluciones probando distintos caminos hasta encontrar una respuesta v\'alida o se haya explorado todas las posibilidades. Si un camino lleva a contradicci\'on, el algoritmo "retrocede" a un paso anterior y prueba \textbf{T} si antes era \textbf{F} o viceversa. \\
+	\begin{algorithm}[H]
+		\caption{Backtracking para verificar si una fórmula CNF es satisfacible}
+		\KwIn{Fórmula $T(\phi)$, asignación booleana $A[0 \dots n{-}1]$, número de variables $n$, índice actual $i$}
+		\KwOut{\textbf{true} si existe una asignación que satisface $F$, \textbf{false} en otro caso}
+			\If{$i = n$}{
+				$c \gets T(\phi)$
+				\While{$c \neq$ nulo}{
+					\If{\textbf{not} is\_satisfied($c$, $A$, $n$)}{
+						\KwRet \textbf{false}
+					}
+					$c \gets c.derecha$
+				}
+				\KwRet \textbf{true}
+			}
+			
+			$A[i] \gets$ \textbf{true} \\
+			\If{backtrack($T(\phi)$, $A$, $n$, $i{+}1$)}{
+				\KwRet \textbf{true}
+			}
+			
+			$A[i] \gets$ \textbf{false} \\
+			\If{backtrack($T(\phi)$, $A$, $n$, $i{+}1$)}{
+				\KwRet \textbf{true}
+			}
+			
+			\KwRet \textbf{false}
+	\end{algorithm}
+	\subsection{Satisfacibilidad}
+	Comprueba si una cl\'ausula espec\'ifica se cumple bajo una asignaci\'on de valores de verdad a los \'atomos. \\
+	\begin{algorithm}[H]
+		\caption{Resuelve el problema de satisfacibilidad (SAT) para una fórmula en CNF}
+		\KwIn{Fórmula $T(\phi)$ en forma normal conjuntiva, número de variables $n$}
+		\KwOut{\textbf{true} si $T(\phi)$ es satisfacible, \textbf{false} en otro caso}
+			Crear arreglo booleano $A[0 \dots n{-}1]$ inicializado en \textbf{false} \\
+			\If{no se puede reservar memoria para $A$}{
+				Imprimir ``Error al asignar memoria'' \\
+				\KwRet \textbf{false}
+			}
+			
+			$result \gets$ backtrack($T(\phi)$, $A$, $n$, $0$) \\
+			Liberar memoria de $A$ \\
+			\KwRet $result$
+	\end{algorithm}
+	\newpage
 	\section{Implementaci\'on}
 	\subsection{Codificaci\'on de f\'ormula}
 
@@ -567,60 +613,9 @@
 		return result;
 	}
 	\end{lstlisting}
-
 	\newpage
-	\section{Compilaci\'on}
-	Antes es necesario saber que para la implementaci\'on de SAT Lineal se usaron dos distribuciones distintas de Linux, Arch Linux y Fedora Linux 42 (Workstation Edition). \\
-	Para la compilaci\'on es necesario los siguientes requisitos:
-	\subsection{Requisitos}
-	\begin{itemize}
-		\item \textbf{gcc} - Compilador de C 
-		\begin{enumerate}
-			\item Arch Linux: \texttt{sudo pacman -S gcc}
-			\item Fedora: \texttt{sudo dnf install gcc}
-		\end{enumerate}
-		\item \textbf{flex} - Generador de analizadores l\'exicos
-		\begin{enumerate}
-			\item Arch Linux: \texttt{sudo pacman -S flex}
-			\item Fedora: \texttt{sudo dnf install flex}
-		\end{enumerate}
-		\item \textbf{make} (Opcional) - Para automatizar la compilaci\'on
-		\begin{enumerate}
-			\item Arch Linux: \texttt{sudo pacman -S make}
-			\item Fedora: \texttt{sudo dnf install make}
-		\end{enumerate}
-	\end{itemize}
-	\subsection{Compilaci\'on}
-	Hay dos m\'etodos para compilar el programa:
-	\begin{enumerate}
-		\item Opci\'on 1: Usando make \\\\\texttt{make} \\\\
-		Esto genera el ejecutable llamado \texttt{tarea1.exe}
-		\item Opci\'on 2: Manualmente (sin make) \\\\
-		\texttt{flex sat\_cnf.l} \\\\
-		\texttt{gcc -Wall -g -c sat\_main.c logic.c postfix\_converter.c sat\_solver.c lex.yy.c} \\\\
-		\texttt{gcc -Wall -g -o tarea1.exe sat\_main.o logic.o postfix\_converter.o lex.yy.o -lfl} \\\\
-		Esto genera el ejecutable llamado \texttt{tarea1.exe}
-	\end{enumerate}
-	\subsection{Ejecuci\'on}
-	Se tendr\'a que preparar un archivo llamado "expresion.txt" con una o m\'as f\'ormulas l\'ogicas escritas en \LaTeX, encerradas con "\$" y con salto de linea entre cada una, por ejemplo: \\\\
-	\texttt{expresion.txt} \\
-	\fbox{\parbox{0.6\linewidth}{
-			\$p \textbackslash wedge q\$ \\
-			\$p \textbackslash vee \textbackslash neg q\$ \\
-			\$p \textbackslash wedge \textbackslash neg r \textbackslash rightarrow q\$
-	}} \\\\
-	Este formato de archivo es v\'alido para el programa. \\\\
-	Luego de tener el archivo preparado se le env\'ia como entrada estandar (stdin) de esta manera: \\\\
-	\texttt{./tarea1.exe < expresion.txt}
-	\subsection{Limpieza}
-	Finalmente para limpiar los archivos compilador y ejecutable:
-	\begin{enumerate}
-		\item Opci\'on 1: Usando make \\\\\texttt{make clean}
-		\item Opci\'on 2: Manualmente (sin make) \\\\
-		\texttt{rm -f *.o lex.yy.c tarea1.exe}
-	\end{enumerate}
 	\section{Conclusiones}
-	Hemos presentado la implementaci\'on de un algoritmo que determina si las variables de una f\'ormula booleana pueden ser reemplazadas con \text{T}	o \textbf{F} de modo que la f\'ormula entregue resultado \textbf{T}, es decir si es satisfacible o no. La tarea fundamental es codificar una f\'ormula de l\'ogica proposicional escrita en \LaTeX de tal forma que los \'unicos operadores que se eval\'uen sean la negaci\'on y conjunci\'on lo cual facilita la asignaci\'on de valores de verdadero o falso usando un \'arbol sint\'actico.
+	Hemos presentado la implementaci\'on de un algoritmo que determina si las variables de una f\'ormula booleana pueden ser reemplazadas con \textbf{T}	o \textbf{F} de modo que la f\'ormula entregue resultado \textbf{T}, es decir si es satisfacible o no. La tarea fundamental es codificar una f\'ormula de l\'ogica proposicional escrita en \LaTeX \;de tal forma que los \'unicos operadores que se eval\'uen sean la negaci\'on y conjunci\'on lo cual facilita la asignaci\'on de valores de verdadero o falso usando un \'arbol sint\'actico.
 \end{document}
 
 
