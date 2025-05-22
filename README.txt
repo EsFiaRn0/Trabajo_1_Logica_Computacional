@@ -46,10 +46,12 @@ Esto generará el ejecutable llamado `tarea1.exe`.
 Opción 2: Manualmente (sin make)
 
     flex sat_lineal.l
-
-    gcc -Wall -g -c sat_main.c logic.c postfix_converter.c sat_solver.c lex.yy.c
-
-    gcc -Wall -g -o tarea1.exe sat_main.o logic.o postfix_converter.o sat_solver.o lex.yy.o -lfl
+    gcc -Wall -g -c sat_main.c
+    gcc -Wall -g -c logic.c
+    gcc -Wall -g -c postfix_converter.c
+    gcc -Wall -g -c sat_solver.c
+    gcc -Wall -g -c lex.yy.c
+    gcc -Wall -g -o tarea1.exe sat_main.o logic.o postfix_converter.o lex.yy.o -lfl
 
 Esto generará el ejecutable llamado `tarea1.exe`.
 
